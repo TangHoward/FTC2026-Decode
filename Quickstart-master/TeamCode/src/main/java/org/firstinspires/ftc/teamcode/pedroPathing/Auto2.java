@@ -447,7 +447,7 @@ public class Auto2 {
     public static class RedCloseAutonomous extends BasCloseAuto {
         @Override
         protected boolean Enable_1st(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_2nd(){
