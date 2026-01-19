@@ -18,7 +18,7 @@ public class Configurable_Constants {
     public static double shooter_longlunch_KP = 2.8;
 
     public static double shooter_nearlunch_F = 14.2;
-    public static double shooter_nearlunch_KP = 2;
+    public static double shooter_nearlunch_KP = 1.8;
 
 
 

@@ -240,10 +240,10 @@ public class Auto2 {
                     waitUntil(2.7, 100);
                     break;
                 case 100:
-                    if(Enable_3rd() && !done_3rd){
-                        setPathState(301);
-                    } else if (Enable_2nd() && !done_2nd) {
+                    if(Enable_2nd() && !done_2nd){
                         setPathState(201);
+                    } else if (Enable_3rd() && !done_3rd) {
+                        setPathState(301);
                     } else if (Enable_1st() && ! done_1st) {
                         setPathState(101);
                     }else setPathState(3);
@@ -432,7 +432,7 @@ public class Auto2 {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
             }*/
             if(onOff){
-                hardware.shooter.setVelocity(4300 / 60 * 28);
+                hardware.shooter.setVelocity(4500 / 60 * 28);
             }else{
                 hardware.shooter.setVelocity(0);
             }
@@ -447,7 +447,7 @@ public class Auto2 {
     public static class RedCloseAutonomous extends BasCloseAuto {
         @Override
         protected boolean Enable_1st(){
-            return false;
+            return true;
         }
         @Override
         protected boolean Enable_2nd(){
@@ -459,7 +459,7 @@ public class Auto2 {
         }
         @Override
         protected boolean Enable_Hide(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_gate(){

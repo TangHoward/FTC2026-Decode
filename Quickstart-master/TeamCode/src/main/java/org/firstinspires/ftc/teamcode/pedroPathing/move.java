@@ -117,7 +117,7 @@
                         telemetry.addData("TargetPose",getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError));
                         break;
                     case 1:
-                        hardware.shooter.setVelocity(2000/60*28);
+                        hardware.shooter.setVelocity(4000/60*28);
                         break;
                     case 2:
                         hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_longlunch_KP, 0, 0, Configurable_Constants.shooter_longlunch_F);
