@@ -20,7 +20,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.InGameTuning;
 
 
 public class Auto {
-    abstract static class BaseFarAuto extends OpMode {
+    /*abstract static class BaseFarAuto extends OpMode {
 
         //protected int pattern_number = 0;
         //變數設定
@@ -347,7 +347,7 @@ public class Auto {
                 }
             }else {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
-            }*/
+            }
             if(onOff){
                 hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28);
             }else{
@@ -383,7 +383,7 @@ public class Auto {
         protected Pose getAutoAimTargetPose(){
             return new Pose(Configurable_Constants.target_X,144);
         }
-    }
+    }*/
 
     /*abstract static class BasCloseAuto extends OpMode {
 
