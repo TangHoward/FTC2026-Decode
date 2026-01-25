@@ -811,8 +811,8 @@ public class Auto2 {
         @Override
         public void init () {
             shootTargetPose= new Pose(
-                    getAutoAimTargetPose().getY(),
-                     Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0))
+                    Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0)),
+                    getAutoAimTargetPose().getY()
             );
 
             hardware.init(hardwareMap);
