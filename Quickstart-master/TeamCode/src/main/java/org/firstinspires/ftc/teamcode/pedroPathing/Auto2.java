@@ -402,7 +402,7 @@ public class Auto2 {
         }
 
     @Autonomous(name = "紅方遠自動程式", group = "RED")
-    public static class RedFarAutonomous extends BasCloseAuto {
+    public static class RedFarAutonomous extends BaseFarAuto {
         @Override
         protected boolean Enable_1st(){
             return true;
@@ -434,7 +434,7 @@ public class Auto2 {
 
     }
     @Autonomous(name = "藍方遠自動程式", group = "BLUE")
-    public static class BlueFarAutonomous extends BasCloseAuto {
+    public static class BlueFarAutonomous extends BaseFarAuto {
         @Override
         protected boolean Enable_1st(){
             return true;
@@ -812,7 +812,7 @@ public class Auto2 {
         public void init () {
             shootTargetPose= new Pose(
                     getAutoAimTargetPose().getY(),
-                    getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError)
+                     Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0))
             );
 
             hardware.init(hardwareMap);
@@ -887,7 +887,6 @@ public class Auto2 {
         public void waitUntil(double sec, int nextstate){
                 if(actionTimer.getElapsedTimeSeconds() >= sec)setPathState(nextstate);
         }
-
 
     }
     @Autonomous(name = "紅方近自動程式", group = "RED")
