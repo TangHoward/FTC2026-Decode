@@ -198,10 +198,10 @@ public class Auto2 {
                     break;
 
                 case 100:
-                    if(Enable_2nd() && !done_2nd){
-                        setPathState(201);
-                    } else if (Enable_1st() && !done_1st) {
+                    if(Enable_1st() && !done_1st){
                         setPathState(101);
+                    } else if (Enable_2nd() && !done_2nd) {
+                        setPathState(201);
                     } else if (Enable_3rd() && !done_3rd) {
                         setPathState(301);
                     }else setPathState(3);
@@ -258,7 +258,7 @@ public class Auto2 {
                         setPathState(104);
                     }
                     break;
-                case 105:
+                case 104:
                     transforming(true);
                     done_1st = true;
                     waitUntil(2.7,100);
@@ -290,12 +290,11 @@ public class Auto2 {
                 case 3:
                     transforming(false);
                     shooting(false);
-                    follower.followPath(Enable_Hide() ? goToFinishPoint : goToShootPoseGateBending);
+                    follower.followPath(Enable_Hide() ? goToHidePoint : goToShootPoseGateBending);
                     setPathState(4);
                     break;
                 case 4:
-
-
+                    break;
             }
         }
         public void setPathState (int pState){
@@ -326,7 +325,7 @@ public class Auto2 {
             );
 
             hardware.init(hardwareMap);
-            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, 0, Configurable_Constants.shooter_nearlunch_F);
+            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_longlunch_KP, 0, Configurable_Constants.shooter_longlunch_KD, Configurable_Constants.shooter_longlunch_F);
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -389,7 +388,7 @@ public class Auto2 {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
             }*/
             if(onOff){
-                hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28);
+                hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28+50);
             }else{
                 hardware.shooter.setVelocity(0);
             }
@@ -491,8 +490,8 @@ public class Auto2 {
 
         protected  Pose shootTargetPose;
         protected final Pose startingPose = new Pose(
-                Math.abs(96 - (getIsBlue() ? 144 : 0)),
-                134,
+                Math.abs(127.1 - (getIsBlue() ? 144 : 0)),
+                111,
                 Math.toRadians(Math.abs(90 - (getIsBlue() ? 180 : 0)))
         );
 
@@ -687,10 +686,10 @@ public class Auto2 {
                     waitUntil(2.7, 100);
                     break;
                 case 100:
-                    if(Enable_2nd() && !done_2nd){
-                        setPathState(201);
-                    } else if (Enable_3rd() && !done_3rd) {
+                    if(Enable_3rd() && !done_3rd){
                         setPathState(301);
+                    } else if (Enable_2nd() && !done_2nd) {
+                        setPathState(201);
                     } else if (Enable_1st() && ! done_1st) {
                         setPathState(101);
                     }else setPathState(3);
@@ -816,7 +815,7 @@ public class Auto2 {
             );
 
             hardware.init(hardwareMap);
-            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, 0, Configurable_Constants.shooter_nearlunch_F);
+            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -879,7 +878,7 @@ public class Auto2 {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
             }*/
             if(onOff){
-                hardware.shooter.setVelocity(4500 / 60 * 28);
+                hardware.shooter.setVelocity(4500 / 60 * 28+50);
             }else{
                 hardware.shooter.setVelocity(0);
             }

@@ -19,7 +19,7 @@ public class Hardware {
         angleController = hardwareMap.get(Servo.class, "angleControllor");
         shooter.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         intake.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-
+        //陳晉嘉要改下面那排 改成shooter.setDirection(DcMotorEx.Direction.REVERSE);
         shooter.setDirection(DcMotorEx.Direction.FORWARD);
         intake.setDirection(DcMotorEx.Direction.FORWARD);
         shooter.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);

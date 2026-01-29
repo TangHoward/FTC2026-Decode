@@ -14,12 +14,15 @@ public class Configurable_Constants {
 
     public static boolean autoshoot = false;
 
-    public static double shooter_longlunch_F = 14.9;
+    public static double shooter_longlunch_F = 13.55;
     public static double shooter_longlunch_KP = 2.8;
 
-    public static double shooter_nearlunch_F = 14.2;
-    public static double shooter_nearlunch_KP = 1.8;
+    public static double shooter_longlunch_KD = 0;
 
+
+    public static double shooter_nearlunch_F = 13.6;
+    public static double shooter_nearlunch_KP = 1.8;
+    public static double shooter_nearlunch_KD = 0;
 
 
     public static double target_X = 144.0;
