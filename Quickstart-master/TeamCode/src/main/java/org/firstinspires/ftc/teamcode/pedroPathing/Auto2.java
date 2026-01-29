@@ -177,6 +177,10 @@ public class Auto2 {
                     .addPath(new BezierLine(follower::getPose, finishPoint))
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, finishPoint.getHeading(),0.6))
                     .build();
+            goToHidePoint = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, HidePoint))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, HidePoint.getHeading(),0.6))
+                    .build();
         }
 
         public void autonomousPathUpdate() {
@@ -320,8 +324,8 @@ public class Auto2 {
         @Override
         public void init () {
             shootTargetPose= new Pose(
-                    getAutoAimTargetPose().getY(),
-                    getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError)
+                    Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0)),
+                    getAutoAimTargetPose().getY()
             );
 
             hardware.init(hardwareMap);
@@ -440,11 +444,11 @@ public class Auto2 {
         }
         @Override
         protected boolean Enable_2nd(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_3rd(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_Hide(){
@@ -452,7 +456,7 @@ public class Auto2 {
         }
         @Override
         protected boolean Enable_gate(){
-            return true;
+            return false;
         }
         @Override
         protected boolean getIsBlue() {
