@@ -211,6 +211,10 @@ public class Auto2 {
                     .addPath(new BezierLine(follower::getPose, HidePoint))
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, HidePoint.getHeading(),0.6))
                     .build();
+            goToGateNoPushStraight = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, gateNoPush))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, gateNoPush.getHeading(),0.6))
+                    .build();
         }
 
         public void autonomousPathUpdate() {
@@ -324,7 +328,7 @@ public class Auto2 {
                 case 3:
                     transforming(false);
                     shooting(false);
-                    follower.followPath(Enable_Hide() ? goToHidePoint : goToShootPoseGateBending);
+                    follower.followPath(Enable_Hide() ? goToHidePoint : goToGateNoPushStraight);
                     setPathState(4);
                     break;
                 case 4:
@@ -470,7 +474,7 @@ public class Auto2 {
     public static class BlueFarAutonomous extends BaseFarAuto {
         @Override
         protected boolean Enable_1st(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_2nd(){
@@ -482,11 +486,11 @@ public class Auto2 {
         }
         @Override
         protected boolean Enable_Hide(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_gate(){
-            return false;
+            return true;
         }
         @Override
         protected boolean getIsBlue() {
@@ -817,6 +821,8 @@ public class Auto2 {
                     setPathState(4);
                     break;
                 case 4:
+                    if(!follower.isBusy()){
+                    }
                     break;
             }
         }
