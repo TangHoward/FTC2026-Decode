@@ -131,7 +131,17 @@ public class Auto2 {
 
         public void buildPath() {
             start = new Path(new BezierLine(startingPose, shootPose));
-            start.setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose));
+            start.setHeadingInterpolation(HeadingInterpolator.piecewise(
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.0, 0.1,
+                            HeadingInterpolator.constant(startingPose.getHeading())
+                    ),
+
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.1, 1.0,
+                            HeadingInterpolator.facingPoint(shootTargetPose)
+                    )
+            ));
 
 
 
@@ -155,12 +165,32 @@ public class Auto2 {
 
             gotoShootPoseBending2nd = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose,SecondElementControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             goToShootPoseGateBending = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose, gateGoToShootControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             gotoShootPose = follower.pathBuilder()
