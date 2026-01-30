@@ -202,10 +202,10 @@ public class Auto2 {
                     break;
 
                 case 100:
-                    if(Enable_1st() && !done_1st){
-                        setPathState(101);
-                    } else if (Enable_2nd() && !done_2nd) {
+                    if(Enable_2nd() && !done_2nd){
                         setPathState(201);
+                    } else if (Enable_1st() && !done_1st) {
+                        setPathState(101);
                     } else if (Enable_3rd() && !done_3rd) {
                         setPathState(301);
                     }else setPathState(3);
@@ -622,7 +622,7 @@ public class Auto2 {
                     .setHeadingInterpolation(HeadingInterpolator.piecewise(
                             new HeadingInterpolator.PiecewiseNode(
                                     0.0, 0.3,
-                                    HeadingInterpolator.constant(follower.getHeading())
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
                             ),
 
                             new HeadingInterpolator.PiecewiseNode(
@@ -635,14 +635,13 @@ public class Auto2 {
             goToShootPoseGateBending = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose, gateGoToShootControlPoint,shootPose))
                     .setHeadingInterpolation(HeadingInterpolator.piecewise(
-
                             new HeadingInterpolator.PiecewiseNode(
-                                    0.0, 0.1,
-                                    HeadingInterpolator.constant(follower.getHeading())
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
                             ),
 
                             new HeadingInterpolator.PiecewiseNode(
-                                    0.1, 1.0,
+                                    0.3, 1.0,
                                     HeadingInterpolator.facingPoint(shootTargetPose)
                             )
                     ))
@@ -690,10 +689,10 @@ public class Auto2 {
                     waitUntil(2.7, 100);
                     break;
                 case 100:
-                    if(Enable_3rd() && !done_3rd){
-                        setPathState(301);
-                    } else if (Enable_2nd() && !done_2nd) {
+                    if(Enable_2nd() && !done_2nd){
                         setPathState(201);
+                    } else if (Enable_3rd() && !done_3rd) {
+                        setPathState(301);
                     } else if (Enable_1st() && ! done_1st) {
                         setPathState(101);
                     }else setPathState(3);

@@ -32,7 +32,7 @@ public class Configurable_Constants {
     public static Pose botPose = null;
 
     public static int shooterLongRangeSpeed = 4500, shooterNearRangeSpeed = 3800;
-    public static double angleControlLong = 0.56 , angleControlNear = 0.37;
+    public static double angleControlLong = 0.56 , angleControlNear = 0.45;
 
 
 }

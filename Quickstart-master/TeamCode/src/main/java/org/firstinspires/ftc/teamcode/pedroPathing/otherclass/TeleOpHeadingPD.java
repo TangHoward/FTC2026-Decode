@@ -22,7 +22,7 @@ public class TeleOpHeadingPD {
     }
     public double calculateTurnPower(double currentHeading, double currentTime){
 
-        double error = targetHeadingRadians-currentHeading;
+        double error =   angleWrap(targetHeadingRadians - currentHeading);
         double deltaTime = currentTime - previousTime;
 
         double derivative =0;
