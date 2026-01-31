@@ -440,23 +440,23 @@ public class Auto2 {
 
     @Autonomous(name = "紅方遠自動程式", group = "RED")
     public static class RedFarAutonomous extends BaseFarAuto {
-        @Override
+        @Override //第一排的球
         protected boolean Enable_1st(){
             return true;
         }
-        @Override
+        @Override //第二排的球
         protected boolean Enable_2nd(){
             return true;
         }
-        @Override
+        @Override //第三排的球
         protected boolean Enable_3rd(){
             return true;
         }
-        @Override
+        @Override //要不要躲
         protected boolean Enable_Hide(){
             return false;
         }
-        @Override
+        @Override //要不要去推牆
         protected boolean Enable_gate(){
             return true;
         }
@@ -472,27 +472,27 @@ public class Auto2 {
     }
     @Autonomous(name = "藍方遠自動程式", group = "BLUE")
     public static class BlueFarAutonomous extends BaseFarAuto {
-        @Override
+        @Override //第一排球
         protected boolean Enable_1st(){
             return false;
         }
-        @Override
+        @Override //第二排球
         protected boolean Enable_2nd(){
             return false;
         }
-        @Override
+        @Override //第三排球
         protected boolean Enable_3rd(){
             return false;
         }
-        @Override
+        @Override //要不要躲
         protected boolean Enable_Hide(){
             return false;
         }
-        @Override
+        @Override //要不要推門
         protected boolean Enable_gate(){
             return true;
         }
-        @Override
+        @Override //要不要躲
         protected boolean getIsBlue() {
             return true;
         }
@@ -929,23 +929,23 @@ public class Auto2 {
     }
     @Autonomous(name = "紅方近自動程式", group = "RED")
     public static class RedCloseAutonomous extends BasCloseAuto {
-        @Override
+        @Override //第一排球
         protected boolean Enable_1st(){
             return true;
         }
-        @Override
+        @Override //第二排球
         protected boolean Enable_2nd(){
             return true;
         }
-        @Override
+        @Override //第三排球
         protected boolean Enable_3rd(){
             return true;
         }
-        @Override
+        @Override //要不要躲
         protected boolean Enable_Hide(){
             return false;
         }
-        @Override
+        @Override //要不要推門
         protected boolean Enable_gate(){
             return true;
         }
