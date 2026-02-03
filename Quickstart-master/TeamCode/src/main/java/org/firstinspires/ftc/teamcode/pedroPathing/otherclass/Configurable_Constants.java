@@ -9,12 +9,15 @@ public class Configurable_Constants {
     public static double slow_mode_mutiplier = 0.5;
 
     // PD 控制器參數 (即時調校)
-    public static double heading_kp = 1;
-    public static double heading_kd = 0.05;
+    public static double heading_kp_Pose = 1;
+    public static double heading_kd_Pose = 0.05;
+
+    public static double heading_kp_Cam = 0.0005;
+    public static double heading_kd_Cam = 0.0;
 
     public static boolean autoshoot = false;
 
-    public static double shooter_longlunch_F = 13.55;
+    public static double shooter_longlunch_F = 15;
     public static double shooter_longlunch_KP = 2.8;
 
     public static double shooter_longlunch_KD = 0;
@@ -25,15 +28,15 @@ public class Configurable_Constants {
     public static double shooter_nearlunch_KD = 0;
 
 
-    public static double target_X = 144.0;
-    public static double target_Y = 144.0;
+    public static double target_X = 142.0;
+    public static double target_Y = 142.0;
     public static int autostartstate =0;
 
     public static Pose botPose = null;
 
-    public static int shooterLongRangeSpeed = 4500, shooterNearRangeSpeed = 3800;
+    public static int shooterLongRangeSpeed = 4500, shooterNearRangeSpeed = 3400/*4500*/;
     //自動角度 0~1
-    public static double angleControlLong = 0.56 , angleControlNear = 0.45;
+    public static double angleControlLong = 0.6 , angleControlNear = 0/*0.52*/;
 
 
 }

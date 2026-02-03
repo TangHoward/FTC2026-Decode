@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
@@ -67,7 +68,7 @@ public class Auto2 {
         );
         protected final Pose firstElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                33
+                45
         );
 
         protected final Pose SecondElement = new Pose(
@@ -77,7 +78,7 @@ public class Auto2 {
         );
         protected final Pose SecondElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                63
+                68
         );
         protected final Pose thirdElement = new Pose(
                 Math.abs(125 - (getIsBlue() ? 144 : 0)),
@@ -86,7 +87,7 @@ public class Auto2 {
         );
         protected final Pose thirdElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                87
+                92
         );
 
         protected final Pose gateDidPush = new Pose(
@@ -221,12 +222,13 @@ public class Auto2 {
             switch (pathState) {
                 case 0://啟動射擊且開始移動
                     shooting(true);
+                    intaking(true);
                     hardware.angleController.setPosition(Configurable_Constants.angleControlLong);
                     follower.followPath(start, true);
                     setPathState(1);
                     break;
                 case 1://開始射擊
-                    if(!follower.isBusy()) {
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28) {
                         setPathState(2);
                     }
                     break;
@@ -269,7 +271,7 @@ public class Auto2 {
                     }
                     break;
                 case 205:
-                    if(!follower.isBusy()) {
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28) {
                         setPathState(206);
                     }
                     break;
@@ -292,7 +294,7 @@ public class Auto2 {
                     }
                     break;
                 case 103:
-                    if(!follower.isBusy()){
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28){
                         setPathState(104);
                     }
                     break;
@@ -315,7 +317,7 @@ public class Auto2 {
                     }
                     break;
                 case 303:
-                    if(!follower.isBusy()){
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
                         setPathState(304);
                     }
                     break;
@@ -346,6 +348,11 @@ public class Auto2 {
             follower.update();
             autonomousPathUpdate();
             Configurable_Constants.botPose = follower.getPose();
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterLongRangeSpeed);
+
             telemetry.addData("path state", pathState);
             telemetry.addData("x", follower.getPose().getX());
             telemetry.addData("y", follower.getPose().getY());
@@ -353,6 +360,7 @@ public class Auto2 {
             telemetry.addData("follower狀態", follower.isBusy() ? "true" : "false");
             telemetry.addData("timer",actionTimer.getElapsedTimeSeconds());
             telemetry.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
 
         @Override
@@ -364,6 +372,10 @@ public class Auto2 {
 
             hardware.init(hardwareMap);
             hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_longlunch_KP, 0, Configurable_Constants.shooter_longlunch_KD, Configurable_Constants.shooter_longlunch_F);
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterLongRangeSpeed);
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -386,6 +398,7 @@ public class Auto2 {
             Drawing.drawRobot(follower.getPose());
             Drawing.sendPacket();
             telemetryM.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
 
         @Override
@@ -407,7 +420,7 @@ public class Auto2 {
             hardware.intake.setPower(power*0.3);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
-            hardware.transferServo2.setPower(power);
+            hardware.transferServo2.setPower(power*0.5);
         }
         public void shooting(boolean onOff){
             double[] solution = all_calculation.solveShooterRPMAndAngle();
@@ -426,7 +439,7 @@ public class Auto2 {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
             }*/
             if(onOff){
-                hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28+50);
+                hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28);
             }else{
                 hardware.shooter.setVelocity(0);
             }
@@ -441,16 +454,14 @@ public class Auto2 {
     @Autonomous(name = "紅方遠自動程式", group = "RED")
     public static class RedFarAutonomous extends BaseFarAuto {
         @Override //第一排的球
-        protected boolean Enable_1st(){
-            return true;
-        }
+        protected boolean Enable_1st(){return true;}
         @Override //第二排的球
         protected boolean Enable_2nd(){
             return true;
         }
         @Override //第三排的球
         protected boolean Enable_3rd(){
-            return true;
+            return false;
         }
         @Override //要不要躲
         protected boolean Enable_Hide(){
@@ -474,15 +485,15 @@ public class Auto2 {
     public static class BlueFarAutonomous extends BaseFarAuto {
         @Override //第一排球
         protected boolean Enable_1st(){
-            return false;
+            return true;
         }
         @Override //第二排球
         protected boolean Enable_2nd(){
-            return false;
+            return true;
         }
         @Override //第三排球
         protected boolean Enable_3rd(){
-            return false;
+            return true;
         }
         @Override //要不要躲
         protected boolean Enable_Hide(){
@@ -490,7 +501,7 @@ public class Auto2 {
         }
         @Override //要不要推門
         protected boolean Enable_gate(){
-            return true;
+            return false;
         }
         @Override //要不要躲
         protected boolean getIsBlue() {
@@ -549,7 +560,7 @@ public class Auto2 {
         );
         protected final Pose firstElementControlPoint = new Pose(
                 Math.abs(80 - (getIsBlue() ? 144 : 0)),
-                35
+                30
         );
         protected final Pose firstElementGoToShootPose = new Pose(
                 Math.abs(110 - (getIsBlue() ? 144 : 0)),
@@ -714,13 +725,13 @@ public class Auto2 {
                     setPathState(1);
                     break;
                 case 1:
-                    if (!follower.isBusy()) {
+                    if (!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28) {
                         setPathState(2);
                     }
                     break;
                 case 2:
                     transforming(true);
-                    waitUntil(2.7, 100);
+                    waitUntil(3.0, 100);
                     break;
                 case 100:
                     if(Enable_2nd() && !done_2nd){
@@ -745,14 +756,14 @@ public class Auto2 {
                     }
                     break;
                 case 303:
-                    if(!follower.isBusy()){
+                    if(!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
                         setPathState(304);
                     }
                     break;
                 case 304:
                     transforming(true);
                     done_3rd = true;
-                    waitUntil(2.7,100);
+                    waitUntil(3.0,100);
                     break;
 
                 case 201:
@@ -767,26 +778,26 @@ public class Auto2 {
                             follower.followPath(goToGateDidPushBending, true);
                             setPathState(203);
                         }else {
-                            follower.followPath(gotoShootPoseBending2nd);
+                            follower.followPath(gotoShootPoseBending2nd, true);
                             setPathState(204);
                         }
                     }
                     break;
                 case 203:
                     if(!follower.isBusy()){
-                        follower.followPath(goToShootPoseGateBending);
+                        follower.followPath(goToShootPoseGateBending, true);
                         setPathState(204);
                     }
                     break;
                 case 204:
-                    if(!follower.isBusy()){
+                    if(!follower.isBusy()&& Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
                         setPathState(205);
                     }
                     break;
                 case 205:
                     transforming(true);
                     done_2nd = true;
-                    waitUntil(2.7,100);
+                    waitUntil(3.0,100);
                     break;
 
 
@@ -803,14 +814,14 @@ public class Auto2 {
                     }
                     break;
                 case 103:
-                    if(!follower.isBusy()){
+                    if(!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
                         setPathState(104);
                     }
                     break;
                 case 104:
                     transforming(true);
                     done_1st = true;
-                    waitUntil(2.7,100);
+                    waitUntil(2.9,100);
                     break;
 
 
@@ -836,6 +847,10 @@ public class Auto2 {
         public void loop () {
             follower.update();
             autonomousPathUpdate();
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterNearRangeSpeed);
             Configurable_Constants.botPose = follower.getPose();
             telemetry.addData("path state", pathState);
             telemetry.addData("x", follower.getPose().getX());
@@ -843,18 +858,26 @@ public class Auto2 {
             telemetry.addData("heading", Math.toDegrees(follower.getPose().getHeading()));
             telemetry.addData("follower狀態", follower.isBusy() ? "true" : "false");
             telemetry.addData("timer",actionTimer.getElapsedTimeSeconds());
+
+            move.dashboard.sendTelemetryPacket(packet);
             telemetry.update();
         }
 
         @Override
         public void init () {
+
+
+            hardware.init(hardwareMap);
+            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterNearRangeSpeed);
+
             shootTargetPose= new Pose(
                     Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0)),
                     getAutoAimTargetPose().getY()
             );
-
-            hardware.init(hardwareMap);
-            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -877,6 +900,7 @@ public class Auto2 {
             Drawing.drawRobot(follower.getPose());
             Drawing.sendPacket();
             telemetryM.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
 
         @Override
@@ -898,7 +922,7 @@ public class Auto2 {
             hardware.intake.setPower(power*0.3);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
-            hardware.transferServo2.setPower(power);
+            hardware.transferServo2.setPower(power *0.3);
         }
         public void shooting(boolean onOff){
             double[] solution = all_calculation.solveShooterRPMAndAngle();
@@ -917,7 +941,7 @@ public class Auto2 {
                 hardware.shooter.setVelocity(5000/ 60 * 28);
             }*/
             if(onOff){
-                hardware.shooter.setVelocity(4500 / 60 * 28+50);
+                hardware.shooter.setVelocity(Configurable_Constants.shooterNearRangeSpeed / 60 * 28);
             }else{
                 hardware.shooter.setVelocity(0);
             }
@@ -975,7 +999,7 @@ public class Auto2 {
         }
         @Override
         protected boolean Enable_Hide(){
-            return true;
+            return false;
         }
         @Override
         protected boolean Enable_gate(){

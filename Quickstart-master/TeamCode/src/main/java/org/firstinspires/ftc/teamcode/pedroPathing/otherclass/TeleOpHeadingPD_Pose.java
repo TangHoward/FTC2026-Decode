@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.otherclass;
 
-public class TeleOpHeadingPD {
+public class TeleOpHeadingPD_Pose {
     private double Kp = 0, Kd = 0;
     private double targetHeadingRadians = 0;
 
     private double previousError = 0.0;
     private double previousTime = 0.0;
 
-    public TeleOpHeadingPD(double kP, double kD, double targetHeading) {
+    public TeleOpHeadingPD_Pose(double kP, double kD, double targetHeading) {
         this.Kp = kP;
         this.Kd = kD;
         this.targetHeadingRadians = targetHeading;

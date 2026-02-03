@@ -1,14 +1,22 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.otherclass;
 
+import android.util.Size;
+
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+
 public class Hardware {
     public DcMotorEx shooter,intake;
     public CRServo transferServo0,transferServo1, transferServo2;
     public Servo angleController;
+    public AprilTagProcessor aprilTag;
+    public VisionPortal visionPortal;
     public void init(HardwareMap hardwareMap) {
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
@@ -28,6 +36,20 @@ public class Hardware {
         transferServo0.setDirection(CRServo.Direction.REVERSE);
         transferServo1.setDirection(CRServo.Direction.REVERSE);
         transferServo2.setDirection(CRServo.Direction.REVERSE);
+
+        aprilTag = new AprilTagProcessor.Builder()
+                        .setDrawAxes(true)
+                        .setDrawTagID(true)
+                        .setDrawCubeProjection(true)
+                        .setLensIntrinsics(820.23, 820.23, 640.0, 360.0)
+                        .build();
+
+        visionPortal = new VisionPortal.Builder()
+                        .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                        .setCameraResolution(new Size(1280, 720))
+                        .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
+                        .addProcessor(aprilTag)
+                        .build();
 
     }
 

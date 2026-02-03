@@ -17,12 +17,15 @@
     import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.All_Calculation;
     import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
     import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.InGameTuning;
-    import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.TeleOpHeadingPD;
+    import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.TeleOpHeadingPD_Cam;
+    import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.TeleOpHeadingPD_Pose;
     import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Constants;
 
     import java.util.function.Supplier;
 
     public class move{
+        public static FtcDashboard dashboard = FtcDashboard.getInstance();
+
         @Configurable
         abstract static class BaseTeleOp extends OpMode{
 
@@ -30,12 +33,12 @@
             protected boolean automatedDrive;
             protected Supplier<PathChain> pathChain;
             protected TelemetryManager telemetryM;
-            protected FtcDashboard dashboard = FtcDashboard.getInstance();
             protected boolean slowMode = false;
 
             protected Hardware hardware = new Hardware();
 
-            protected TeleOpHeadingPD teleOpHeadingPD;
+            protected TeleOpHeadingPD_Pose teleOpHeadingPD_Pose;
+            protected TeleOpHeadingPD_Cam teleOpHeadingPD_cam;
 
             protected All_Calculation all_calculation;
             protected double previousServoCalculatePosition = -1;
@@ -63,7 +66,8 @@
 
                 double[] targetXYZ= {getAutoAimTargetPose().getX(),getAutoAimTargetPose().getY(),45 };
                 double[] obstacle = {getIsBlue() ? 25 : 119,144, getIsBlue() ? 5 : 139,120 , 45};
-                teleOpHeadingPD = new TeleOpHeadingPD(Configurable_Constants.heading_kp, Configurable_Constants.heading_kd, targetHeading);
+                teleOpHeadingPD_Pose = new TeleOpHeadingPD_Pose(Configurable_Constants.heading_kp_Pose, Configurable_Constants.heading_kd_Pose, targetHeading);
+                teleOpHeadingPD_cam = new TeleOpHeadingPD_Cam(Configurable_Constants.heading_kp_Cam, Configurable_Constants.heading_kd_Cam, getIsBlue() ? 20: 24, hardware);
                 all_calculation = new All_Calculation(targetXYZ,follower, obstacle);
 
             }
@@ -71,6 +75,10 @@
             @Override
             public void start() {
                 follower.startTeleopDrive();
+            }
+            @Override
+            public void init_loop(){
+                FtcDashboard.getInstance().startCameraStream(hardware.visionPortal, 0);
             }
 
             @Override
@@ -81,6 +89,7 @@
                 Pose aimTargetPose = getAutoAimTargetPose();
 
                 TelemetryPacket packet = new TelemetryPacket();
+
 
                 pathChain = () -> follower.pathBuilder()
                         .addPath(new Path(new BezierLine(follower::getPose, pathTargetPose)))
@@ -120,18 +129,18 @@
                 switch (whichzone) {
                     case 0:
                         hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
-                        teleOpHeadingPD.setTargetHeading(Math.atan2(getAutoAimTargetPose().getY()-follower.getPose().getY(),
+                        teleOpHeadingPD_Pose.setTargetHeading(Math.atan2(getAutoAimTargetPose().getY()-follower.getPose().getY(),
                                 getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError)-follower.getPose().getX()));
                         telemetry.addData("TargetPose",getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError));
                         break;
                     case 1:
-                        hardware.shooter.setVelocity(4000/60*28+50);
-                        packet.put("shootertargetRPM", 4000);
+                        hardware.shooter.setVelocity(4250 /60*28+50);
+                        packet.put("shootertargetRPM", 4250);
                         break;
                     case 2:
                         hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_longlunch_KP, 0, Configurable_Constants.shooter_longlunch_KD, Configurable_Constants.shooter_longlunch_F);
 
-                        teleOpHeadingPD.setTargetHeading(Math.atan2(getAutoAimTargetPose().getY(),
+                        teleOpHeadingPD_Pose.setTargetHeading(Math.atan2(getAutoAimTargetPose().getY(),
                                 getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.longLunchBallXError)-follower.getPose().getX() ));
                         break;
 
@@ -139,9 +148,8 @@
 
                 double currentTimeSeconds = getRuntime();
 
-                teleOpHeadingPD.setCoefficients(Configurable_Constants.heading_kp, Configurable_Constants.heading_kd);
-                /*teleOpHeadingPD.setTargetHeading(Math.atan2(getAutoAimTargetPose().getY()-follower.getPose().getY(),
-                        getAutoAimTargetPose().getX()-follower.getPose().getX()));*/
+                teleOpHeadingPD_Pose.setCoefficients(Configurable_Constants.heading_kp_Pose, Configurable_Constants.heading_kd_Pose);
+                teleOpHeadingPD_cam.setCoefficients(Configurable_Constants.heading_kp_Cam,Configurable_Constants.heading_kd_Cam);
                 if (!automatedDrive) {
 
                     if (!slowMode) {
@@ -149,8 +157,9 @@
                         follower.setTeleOpDrive(
                                 -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1),
                                 -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1),
-                                !gamepad1.right_bumper ?  -gamepad1.right_stick_x
-                                        : teleOpHeadingPD.calculateTurnPower(follower.getHeading(),currentTimeSeconds),
+                                !gamepad1.right_bumper ? (gamepad1.left_bumper && teleOpHeadingPD_cam.foundTarget()? teleOpHeadingPD_cam.calculateTurnPower(currentTimeSeconds)
+                                        : -gamepad1.right_stick_x)
+                                        : teleOpHeadingPD_Pose.calculateTurnPower(follower.getHeading(),currentTimeSeconds),
                                 false // Robot Centric
                         );
                     }
@@ -159,19 +168,13 @@
                                 -gamepad1.left_stick_y * Configurable_Constants.slow_mode_mutiplier * (getIsBlue() ? -1 : 1),
                                 -gamepad1.left_stick_x * Configurable_Constants.slow_mode_mutiplier * (getIsBlue() ? -1 : 1),
                                 !gamepad1.right_bumper ?  -gamepad1.right_stick_x
-                                        : teleOpHeadingPD.calculateTurnPower(follower.getHeading(),currentTimeSeconds)
+                                        : teleOpHeadingPD_Pose.calculateTurnPower(follower.getHeading(),currentTimeSeconds)
                                         * Configurable_Constants.slow_mode_mutiplier,
                                 false
                                 // Robot Centric
                         );
                     }
-                    if(gamepad1.b){
-                        hardware.intake.setPower(1);
-                    } else if (gamepad1.a) {
-                        hardware.intake.setPower(0.3);
-                    }else {
-                        hardware.intake.setPower(0);
-                    }
+
 
                     packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
                     dashboard.sendTelemetryPacket(packet);
@@ -190,14 +193,36 @@
                     }
 
 
-                    //Slow Mode
-                    if (gamepad2.leftBumperWasPressed()) {
-                        slowMode = !slowMode;
-                    }
+
                 }else {
                     if (gamepad2.bWasPressed() || !follower.isBusy()) {
                         follower.startTeleopDrive();
                         automatedDrive = false;
+                    }
+                }
+                if(gamepad1.b){
+                    hardware.intake.setPower(1);
+                } else if (gamepad1.a) {
+                    hardware.intake.setPower(0.3);
+                }else {
+                    hardware.intake.setPower(0);
+                }
+
+                hardware.transferServo0.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
+                hardware.transferServo1.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
+                hardware.transferServo2.setPower(gamepad1.a ? 1 : 0);
+
+                if(gamepad2.dpadUpWasPressed()){
+                    if(whichzone == 0){
+                        InGameTuning.nearLunchAngleError -= 1;
+                    }else {
+                        InGameTuning.longLunchAngleError -= 1;
+                    }
+                } else if (gamepad2.dpadDownWasPressed()) {
+                    if(whichzone == 0){
+                        InGameTuning.nearLunchAngleError += 1;
+                    }else {
+                        InGameTuning.longLunchAngleError += 1;
                     }
                 }
                 telemetryM.debug("position", follower.getPose());
@@ -215,6 +240,7 @@
                 telemetry.addData("射擊範圍",lunchZone[whichzone]);
                 telemetry.addData("計算角度",solution[1]);
                 telemetry.addData("計算RPM",solution[0]);
+                telemetry.addData("是否有看到april tag", teleOpHeadingPD_cam.foundTarget() ? "有": "沒有" );
 
             }
             public int WhichZone(){
