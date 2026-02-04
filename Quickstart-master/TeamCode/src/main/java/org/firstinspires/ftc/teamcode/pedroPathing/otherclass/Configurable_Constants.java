@@ -17,8 +17,8 @@ public class Configurable_Constants {
 
     public static boolean autoshoot = false;
 
-    public static double shooter_longlunch_F = 15;
-    public static double shooter_longlunch_KP = 2.8;
+    public static double shooter_longlunch_F = 17;
+    public static double shooter_longlunch_KP = 3.2;
 
     public static double shooter_longlunch_KD = 0;
 
@@ -34,9 +34,9 @@ public class Configurable_Constants {
 
     public static Pose botPose = null;
 
-    public static int shooterLongRangeSpeed = 4500, shooterNearRangeSpeed = 3400/*4500*/;
+    public static int shooterLongRangeSpeed = 5400, shooterNearRangeSpeed = 3400/*4500*/;
     //自動角度 0~1
-    public static double angleControlLong = 0.6 , angleControlNear = 0/*0.52*/;
+    public static double angleControlLong = 0.45 , angleControlNear = 0/*0.52*/;
 
 
 }

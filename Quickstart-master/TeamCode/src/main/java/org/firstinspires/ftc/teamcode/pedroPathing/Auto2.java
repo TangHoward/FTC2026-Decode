@@ -420,7 +420,7 @@ public class Auto2 {
             hardware.intake.setPower(power*0.3);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
-            hardware.transferServo2.setPower(power*0.5);
+            hardware.transferServo2.setPower(power*0.6);
         }
         public void shooting(boolean onOff){
             double[] solution = all_calculation.solveShooterRPMAndAngle();
@@ -538,11 +538,7 @@ public class Auto2 {
         protected abstract Pose getAutoAimTargetPose();
 
         protected  Pose shootTargetPose;
-        protected final Pose startingPose = new Pose(
-                Math.abs(127.1 - (getIsBlue() ? 144 : 0)),
-                111,
-                Math.toRadians(Math.abs(90 - (getIsBlue() ? 180 : 0)))
-        );
+
 
         protected final Pose shootPose = new Pose(
                 Math.abs(96 - (getIsBlue() ? 144 : 0)),
