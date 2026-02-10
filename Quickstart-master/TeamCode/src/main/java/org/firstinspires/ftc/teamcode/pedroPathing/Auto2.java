@@ -115,7 +115,7 @@ public class Auto2 {
                 ,Math.toRadians(Math.abs(180 - (getIsBlue() ? 180 : 0)))
         );
         protected final Pose HidePoint = new Pose(
-                Math.abs(130 -(getIsBlue()? 144:0)),
+                Math.abs(120 -(getIsBlue()? 144:0)),
                 12
                 ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
@@ -454,10 +454,10 @@ public class Auto2 {
     @Autonomous(name = "紅方遠自動程式", group = "RED")
     public static class RedFarAutonomous extends BaseFarAuto {
         @Override //第一排的球
-        protected boolean Enable_1st(){return true;}
+        protected boolean Enable_1st(){return false;}
         @Override //第二排的球
         protected boolean Enable_2nd(){
-            return true;
+            return false;
         }
         @Override //第三排的球
         protected boolean Enable_3rd(){
@@ -465,11 +465,11 @@ public class Auto2 {
         }
         @Override //要不要躲
         protected boolean Enable_Hide(){
-            return false;
+            return true;
         }
         @Override //要不要去推牆
         protected boolean Enable_gate(){
-            return true;
+            return false;
         }
         @Override
         protected boolean getIsBlue() {
@@ -485,19 +485,19 @@ public class Auto2 {
     public static class BlueFarAutonomous extends BaseFarAuto {
         @Override //第一排球
         protected boolean Enable_1st(){
-            return true;
+            return false;
         }
         @Override //第二排球
         protected boolean Enable_2nd(){
-            return true;
+            return false;
         }
         @Override //第三排球
         protected boolean Enable_3rd(){
-            return true;
+            return false;
         }
         @Override //要不要躲
         protected boolean Enable_Hide(){
-            return false;
+            return true;
         }
         @Override //要不要推門
         protected boolean Enable_gate(){
@@ -543,6 +543,11 @@ public class Auto2 {
         protected final Pose shootPose = new Pose(
                 Math.abs(96 - (getIsBlue() ? 144 : 0)),
                 86
+        );
+        protected final Pose startingPose = new Pose(
+                Math.abs(118.3 - (getIsBlue() ? 144 : 0)),
+                127.5,
+                Math.toRadians(Math.abs(40.3 - (getIsBlue() ? 180 : 0)))
         );
         protected final Pose humanElementsPose = new Pose(
                 Math.abs(129 - (getIsBlue() ? 144 : 0)),
@@ -727,7 +732,7 @@ public class Auto2 {
                     break;
                 case 2:
                     transforming(true);
-                    waitUntil(3.0, 100);
+                    waitUntil(3.2, 100);
                     break;
                 case 100:
                     if(Enable_2nd() && !done_2nd){
@@ -759,7 +764,7 @@ public class Auto2 {
                 case 304:
                     transforming(true);
                     done_3rd = true;
-                    waitUntil(3.0,100);
+                    waitUntil(3.2,100);
                     break;
 
                 case 201:
@@ -793,7 +798,7 @@ public class Auto2 {
                 case 205:
                     transforming(true);
                     done_2nd = true;
-                    waitUntil(3.0,100);
+                    waitUntil(3.2,100);
                     break;
 
 
