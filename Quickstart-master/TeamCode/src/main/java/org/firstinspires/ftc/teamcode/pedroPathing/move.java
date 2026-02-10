@@ -28,28 +28,28 @@
 
         @Configurable
         abstract static class BaseTeleOp extends OpMode{
+            // 變數宣告
+            private Follower follower;
+            private boolean automatedDrive;
+            private Supplier<PathChain> pathChain;
+            private TelemetryManager telemetryM;
+            private boolean slowMode = false;
 
-            protected Follower follower;
-            protected boolean automatedDrive;
-            protected Supplier<PathChain> pathChain;
-            protected TelemetryManager telemetryM;
-            protected boolean slowMode = false;
+            private Hardware hardware = new Hardware();
 
-            protected Hardware hardware = new Hardware();
+            private TeleOpHeadingPD_Pose teleOpHeadingPD_Pose;
+            private TeleOpHeadingPD_Cam teleOpHeadingPD_cam;
 
-            protected TeleOpHeadingPD_Pose teleOpHeadingPD_Pose;
-            protected TeleOpHeadingPD_Cam teleOpHeadingPD_cam;
-
-            protected All_Calculation all_calculation;
-            protected double previousServoCalculatePosition = -1;
-            protected final double smoothingFactor = 1;
-            protected double targetHeading = 0;
+            private All_Calculation all_calculation;
+            private double previousServoCalculatePosition = -1;
+            private final double smoothingFactor = 1;
+            private double targetHeading = 0;
             protected abstract Pose getStartingPose();
             protected abstract Pose getAutomatedPathTargetPose();
             protected abstract Pose getAutoAimTargetPose();
             protected abstract boolean getIsBlue();
 
-
+            // (初始化)機器一開始會做的事情 (機器不能動!!)
             @Override
             public void init() {
 
@@ -72,15 +72,17 @@
 
             }
 
+            // 機器開始會做的事情
             @Override
             public void start() {
                 follower.startTeleopDrive();
             }
+            // 初始化迴圈
             @Override
             public void init_loop(){
                 FtcDashboard.getInstance().startCameraStream(hardware.visionPortal, 0);
             }
-
+            // 開始的迴圈(直到結束)
             @Override
             public void loop() {
 
@@ -90,23 +92,25 @@
 
                 TelemetryPacket packet = new TelemetryPacket();
 
-
+                // 實時派給這個路徑工作
                 pathChain = () -> follower.pathBuilder()
                         .addPath(new Path(new BezierLine(follower::getPose, pathTargetPose)))
                         .setHeadingInterpolation(HeadingInterpolator.facingPoint(aimTargetPose.getX() + InGameTuning.longLunchBallXError, aimTargetPose.getY()))
                         .build();
-
+                //判斷機器在哪個區域
                 Configurable_Constants.botPose = follower.getPose();
                 String[] lunchZone ={"near","none","far"};
                 int whichzone = 0;
                 whichzone = WhichZone();
 
                 follower.update();
+                //把機器在panel上畫出來
                 Drawing.drawRobot(follower.getPose());
                 Drawing.sendPacket();
 
+                // All_Calculation 的計算值
                 double[] solution = all_calculation.solveShooterRPMAndAngle();
-
+                // 依計算後的數值去決定要怎麼做
                 if (solution[0] > 0) {
                     double rpm = solution[0];
                     double angleRad = solution[1];
@@ -124,8 +128,9 @@
                     hardware.angleController.setPosition(smoothedPosition);
                     previousServoCalculatePosition = smoothedPosition;
                 }
+
                 telemetryM.update();
-                //對於目前位置而做出的舉動
+                //對於機器人所在的區域而做出的舉動
                 switch (whichzone) {
                     case 0:
                         hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
@@ -145,15 +150,16 @@
                         break;
 
                 }
-
+                // 因應PID 所需的時間
                 double currentTimeSeconds = getRuntime();
-
                 teleOpHeadingPD_Pose.setCoefficients(Configurable_Constants.heading_kp_Pose, Configurable_Constants.heading_kd_Pose);
                 teleOpHeadingPD_cam.setCoefficients(Configurable_Constants.heading_kp_Cam,Configurable_Constants.heading_kd_Cam);
+                // 因為有自動駕駛 所以這是當沒有使用自動駕駛時會做的事情
                 if (!automatedDrive) {
-
+                    // 判斷是否有緩速模式
                     if (!slowMode) {
-                        // 蕭濬鑫 false --> true
+                        // 機器前後左右或是轉向 數值 0~1
+                        // 最後一個false 的意思是是否要用全局去看前後左右還是用機器人的朝向去看前後左右
                         follower.setTeleOpDrive(
                                 -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1),
                                 -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1),
@@ -179,14 +185,8 @@
                     packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
                     dashboard.sendTelemetryPacket(packet);
 
-                    hardware.transferServo0.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
-                    hardware.transferServo1.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
-                    hardware.transferServo2.setPower(gamepad1.a ? 1 : 0);
-                    /*hardware.angleController.setPosition(gamepad1.dpadUpWasPressed() && hardware.angleController.getPosition() < 1?
-                            hardware.angleController.getPosition() +0.05 : hardware.angleController.getPosition());
-                    hardware.angleController.setPosition(gamepad1.dpadDownWasPressed() && hardware.angleController.getPosition() > 0?
-                            hardware.angleController.getPosition() -0.05 : hardware.angleController.getPosition());*/
-                    //Automated PathFollowing
+
+                    // 啟動自動駕駛
                     if (gamepad2.aWasPressed() && true) {
                         follower.followPath(pathChain.get());
                         automatedDrive = true;
@@ -195,11 +195,13 @@
 
 
                 }else {
+                    //如果正在自動駕駛時 會做的事情
                     if (gamepad2.bWasPressed() || !follower.isBusy()) {
                         follower.startTeleopDrive();
                         automatedDrive = false;
                     }
                 }
+                //無論有沒有自動駕駛都會做的事情
                 if(gamepad1.b){
                     hardware.intake.setPower(1);
                 } else if (gamepad1.a) {
@@ -211,7 +213,7 @@
                 hardware.transferServo0.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
                 hardware.transferServo1.setPower(gamepad1.b || gamepad1.a ? 1 : 0);
                 hardware.transferServo2.setPower(gamepad1.a ? 1 : 0);
-
+                // 即時使用手把調整射擊角度(避免里程計誤差)
                 if(gamepad2.dpadUpWasPressed()){
                     if(whichzone == 0){
                         InGameTuning.nearLunchAngleError -= 1;
@@ -243,6 +245,7 @@
                 telemetry.addData("是否有看到april tag", teleOpHeadingPD_cam.foundTarget() ? "有": "沒有" );
 
             }
+            //判斷機器位置
             public int WhichZone(){
                 if(follower.getPose().getX() >= 48 &&
                    follower.getPose().getX() <= 96 &&

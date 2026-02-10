@@ -6,13 +6,14 @@ import com.pedropathing.follower.Follower;
 
 @Configurable
 public class All_Calculation {
-    //機構最小角度
+    //宣告機構最小角度
     public static double startdegree = 40;
     //控制角度的機構的半徑,控制角度齒輪的半徑
     public static double angleControlRadius = 140, angleControlGearRadius =19.94;
 
-
-    public double calculateServoPosition(double targetRad, double controlServoMaxdegree,int whichzone){
+    // 藉由給的角度、控制角度的半徑、控制角度齒輪的半徑 去計算出伺服馬達的位置(position)的函數
+    public double calculateServoPosition(//目標弧度,伺服馬達最高角度(依不同的伺服馬達規格會有不同的數字),機器人在哪個區域(可以做到不同區域會有不同的角度補償)
+                                         double targetRad, double controlServoMaxdegree,int whichzone){
 
         double startRad = Math.toRadians(startdegree + (whichzone==0? InGameTuning.nearLunchAngleError: InGameTuning.longLunchAngleError));
         double mechRad = targetRad - startRad;
@@ -30,18 +31,24 @@ public class All_Calculation {
         return pos;
     }
     //這裡的單位都是SI
+    // 射擊倫半徑
     public static double flyWheelRadius = 0.05;
+    // 效率速度(因為球出去的速度不可能跟射擊輪的線性速度一樣)
     public static double efficiencyRate = 0.28;
-
+    // 射擊倫與場地地板的高度
     public static double shooterHeightM = 0.292;
+    // 目標
     double[] targetXYZ;
+    // 障礙物
     double[] obstacleXYZ;
     Follower bot;
+    // 設定數字的副程式
     public All_Calculation(double[] targetXYZ,Follower bot,double[] obstacleXYZ){
         this.targetXYZ = targetXYZ;
         this.bot =bot;
         this.obstacleXYZ = obstacleXYZ;
     }
+    // 藉由目標、障礙物和射擊輪的速度 去計算角度的函數(目前沒有使用)
     public double calculateElementRadians(double shooterVelocity){
         if (shooterVelocity < 50) return -1;
         double tx = targetXYZ[0] * 0.0254;
@@ -108,6 +115,7 @@ public class All_Calculation {
                         -1;
         //return low_angle > Math.toRadians(startdegree)&& low_angle < Math.toRadians(60) ? low_angle : -1;
     }
+    // 經由反覆計算 不同的角度會有不同的射擊輪速度 再去取出最小射擊輪速度的寒士
     public double[] solveShooterRPMAndAngle() {
         double g = 9.8; // m/s^2
         double minDeg = startdegree; // 機構最小角
@@ -180,6 +188,7 @@ public class All_Calculation {
         return new double[]{bestRPM, bestAngleRad};
 
     }
+    // 計算障礙物(牆) 與射擊倫的直線距離的函數
     private Double rayIntersectWallDistance(
             double rx, double ry,
             double dx, double dy,
@@ -203,6 +212,7 @@ public class All_Calculation {
         }
         return null;
     }
+    // 確認球的路徑 是否有被障礙物給檔到的函數
     private boolean rayBlockedByWallWithHeight(
             double rx, double ry,
             double dx, double dy,

@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Const
 import java.util.function.Supplier;
 
 public class move_without_Pose{
+    //未使用里程計的程式(以防里程計壞掉)
     public static FtcDashboard dashboard = FtcDashboard.getInstance();
 
     @Configurable

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.otherclass;
 
 public class TeleOpHeadingPD_Pose {
+    //部分程式一樣 請見TeleOpHeadingPD_Cam
     private double Kp = 0, Kd = 0;
     private double targetHeadingRadians = 0;
 
@@ -39,6 +40,7 @@ public class TeleOpHeadingPD_Pose {
          returnvalue = Math.min(Math.max(pTerm + dTerm, -0.7),0.7);
          return returnvalue;
     }
+    //去解決機器轉一整圈的問題
     private double angleWrap(double angle) {
         while (angle > Math.PI) angle -= 2 * Math.PI;
         while (angle < -Math.PI) angle += 2 * Math.PI;

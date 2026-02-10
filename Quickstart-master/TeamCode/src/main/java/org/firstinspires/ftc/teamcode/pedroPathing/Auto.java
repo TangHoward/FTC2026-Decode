@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -10,8 +13,6 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.bylazar.telemetry.PanelsTelemetry;
-import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.All_Calculation;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Constants;
@@ -20,108 +21,145 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.InGameTuning;
 
 
 public class Auto {
-    /*abstract static class BaseFarAuto extends OpMode {
+        abstract static class BaseFarAuto extends OpMode {
 
         //protected int pattern_number = 0;
         //變數設定
-        protected TelemetryManager telemetryM;
-        protected Follower follower;
-        protected Timer pathTimer, actionTimer, opmodeTimer;
-        protected int pathState = 21;
+        private TelemetryManager telemetryM;
+        private Follower follower;
+        private Timer pathTimer, actionTimer, opmodeTimer;
+        private int pathState = 0;
 
-        protected Hardware hardware = new Hardware();
+        private Hardware hardware = new Hardware();
 
         protected abstract boolean getIsBlue();
 
-        protected All_Calculation all_calculation;
+        protected abstract boolean Enable_1st();
+        protected abstract boolean Enable_2nd();
+        protected abstract boolean Enable_3rd();
+        protected abstract boolean Enable_Hide();
+        protected abstract boolean Enable_gate();
+        private boolean done_1st = false, done_2nd= false, done_3rd = false;
+        private All_Calculation all_calculation;
 
         protected abstract Pose getAutoAimTargetPose();
 
-
-        protected Pose shootTargetPose;
-        protected final Pose startingPose = new Pose(
+        // 每個 "點(位置)" 的宣告
+        private Pose shootTargetPose;
+        private final Pose startingPose = new Pose(
                 Math.abs(96 - (getIsBlue() ? 144 : 0)),
                 8,
                 Math.toRadians(Math.abs(90 - (getIsBlue() ? 180 : 0)))
         );
 
-        protected final Pose shootPose = new Pose(
+        private final Pose shootPose = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
                 15
         );
-        protected final Pose humanElementsPose = new Pose(
+        private final Pose humanElementsPose = new Pose(
                 Math.abs(129 - (getIsBlue() ? 144 : 0)),
                 11,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose firstElement = new Pose(
+        private final Pose firstElement = new Pose(
                 Math.abs(130.5 - (getIsBlue() ? 144 : 0)),
                 35,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose firstElementControlPoint = new Pose(
+        private final Pose firstElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                33
+                45
         );
 
-        protected final Pose SecondElement = new Pose(
+        private final Pose SecondElement = new Pose(
                 Math.abs(130.5 - (getIsBlue() ? 144 : 0)),
                 60,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose SecondElementControlPoint = new Pose(
+        private final Pose SecondElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                63
+                68
         );
-        protected final Pose thirdElement = new Pose(
+        private final Pose thirdElement = new Pose(
                 Math.abs(125 - (getIsBlue() ? 144 : 0)),
                 84,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose thirdElementControlPoint = new Pose(
+        private final Pose thirdElementControlPoint = new Pose(
                 Math.abs(88 - (getIsBlue() ? 144 : 0)),
-                87
+                92
         );
 
-        protected final Pose gateDidPush = new Pose(
+        private final Pose gateDidPush = new Pose(
                 Math.abs(124.6 - (getIsBlue() ? 144 : 0)),
                 70,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose gateNoPush = new Pose(
+        private final Pose gateNoPush = new Pose(
                 Math.abs(115 - (getIsBlue() ? 144 : 0)),
                 70,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
         //this GateControlPoint is for shootPose to gate
-        protected final Pose goToGateControlPoint = new Pose(
+        private final Pose goToGateControlPoint = new Pose(
                 Math.abs(110 - (getIsBlue() ? 144 : 0)),
                 51.4
         );
-        protected final Pose gateGoToShootControlPoint = new Pose(
+        private final Pose gateGoToShootControlPoint = new Pose(
                 Math.abs(75 - (getIsBlue() ? 144 : 0)),
                 67
         );
-        protected final Pose finishPoint = new Pose(
+        private final Pose finishPoint = new Pose(
                 Math.abs(88 -(getIsBlue()? 144:0)),
                 48
                 ,Math.toRadians(Math.abs(180 - (getIsBlue() ? 180 : 0)))
         );
+        private final Pose HidePoint = new Pose(
+                Math.abs(120 -(getIsBlue()? 144:0)),
+                12
+                ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
+        );
 
 
-        protected Path start;
-        protected PathChain pick1stElement, gotoShootPose,
+        // 每個 "路徑" 的宣告
+        private Path start;
+        private PathChain pick1stElement, gotoShootPose,
                 pick2ndElement,gotoShootPoseBending2nd,
                 pick3rdElement,gotoShootPoseBending3rd,
                 goToShootPoseGateBending,
-                goToGateDidPushStraight, goToGateDidPushBending,goToGateNoPushStraight, goToGateNoPushBending;
-
-        public void buildPath() {
+                goToGateDidPushStraight, goToGateDidPushBending,goToGateNoPushStraight, goToGateNoPushBending,
+                goToFinishPoint, goToHidePoint;
+        // 給每個路徑工作的副程式
+        private void buildPath() {
+            // 靜態宣告(因為起點都是設定的)
             start = new Path(new BezierLine(startingPose, shootPose));
-            start.setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose));
+            start.setHeadingInterpolation(HeadingInterpolator.piecewise(
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.0, 0.1,
+                            HeadingInterpolator.constant(startingPose.getHeading())
+                    ),
 
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.1, 1.0,
+                            HeadingInterpolator.facingPoint(shootTargetPose)
+                    )
+            ));
+            /*
+            這個會把朝向的路徑分段 全部一個路徑是100% 所以這個把它分成了兩段
+            有一段是0%~10% 的路徑都會跟startingPose 的朝向一樣
+            有一段則是10%~100% 的路逕會面朝射擊目標位置(shootTargetPose)
+            * new HeadingInterpolator.PiecewiseNode(
+                            0.0, 0.1,
+                            HeadingInterpolator.constant(startingPose.getHeading())
+                    ),
 
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.1, 1.0,
+                            HeadingInterpolator.facingPoint(shootTargetPose)
+                    )
+                    */
 
+            // 動態宣告(通過機器位置 和控制點、目標點 去做路徑)
             pick1stElement =follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose,firstElementControlPoint,firstElement))
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,firstElement.getHeading(),0.5))
@@ -142,12 +180,32 @@ public class Auto {
 
             gotoShootPoseBending2nd = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose,SecondElementControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             goToShootPoseGateBending = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose, gateGoToShootControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             gotoShootPose = follower.pathBuilder()
@@ -160,115 +218,161 @@ public class Auto {
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, gateDidPush.getHeading(), 0))
                     .build();
 
+            goToFinishPoint = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, finishPoint))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, finishPoint.getHeading(),0.6))
+                    .build();
+            goToHidePoint = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, HidePoint))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, HidePoint.getHeading(),0.6))
+                    .build();
+            goToGateNoPushStraight = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, gateNoPush))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, gateNoPush.getHeading(),0.6))
+                    .build();
         }
 
-        public void autonomousPathUpdate() {
+        private void autonomousPathUpdate() {
+            // 控制機器目前狀態(做到哪了)
             switch (pathState) {
                 case 0://啟動射擊且開始移動
                     shooting(true);
+                    intaking(true);
                     hardware.angleController.setPosition(Configurable_Constants.angleControlLong);
                     follower.followPath(start, true);
                     setPathState(1);
                     break;
-                case 1://開始射擊
-                    if(!follower.isBusy()) {
+                case 1://等待
+                    //等待直到機器到點 和 射擊輪速度到要求範圍
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28) {
                         setPathState(2);
                     }
                     break;
                 case 2:
+                    //開始射擊
                     transforming(true);
-                    waitUntil(2.7,3);
+                    //等待某個秒數後到state 100 進行判斷
+                    waitUntil(2.7,100);
                     break;
-                case 3:
-                    transforming(false);
-                    follower.followPath(pick1stElement,true);
-                    intaking(true);
-                    setPathState(4);
+                // 判斷是否已經做過某件事 或是 是否需要做某件事
+                case 100:
+                    if(Enable_2nd() && !done_2nd){
+                        setPathState(201);
+                    } else if (Enable_1st() && !done_1st) {
+                        setPathState(101);
+                    } else if (Enable_3rd() && !done_3rd) {
+                        setPathState(301);
+                    }else setPathState(3);
                     break;
-                case 4:
-                    if(!follower.isBusy()) {
-                        follower.followPath(gotoShootPose,true);
-                        setPathState(5);
-                    }
-                    break;
-                case 5:
-                    if(!follower.isBusy()){
-                        setPathState(6);
-                    }
-                    break;
-                case 6:
-                    transforming(true);
-                    waitUntil(2.7,7);
-                    break;
-                case 7:
+                case 201:
                     transforming(false);
                     follower.followPath(pick2ndElement,true);
                     intaking(true);
-                    setPathState(8);
+                    //判斷是否需要推門
+                    setPathState(Enable_gate() ? 202 : 204);
                     break;
-                case 8:
+                case 202:
                     if(!follower.isBusy()) {
                         follower.followPath(goToGateDidPushBending,true);
-                        setPathState(9);
+                        setPathState(203);
                     }
                     break;
-                case 9:
+                case 203:
                     if(!follower.isBusy()){
-                        follower.followPath(goToShootPoseGateBending,true);
-                        setPathState(10);
+                        follower.followPath(goToShootPoseGateBending);
+                        setPathState(205);
                     }
                     break;
-                case 10:
+                case 204:
                     if(!follower.isBusy()){
-                        setPathState(11);
+                        follower.followPath(gotoShootPoseBending2nd);
+                        setPathState(205);
                     }
                     break;
-                case 11:
+                case 205:
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28) {
+                        setPathState(206);
+                    }
+                    break;
+                case 206:
                     transforming(true);
-                    waitUntil(2.7,12);
+                    done_2nd = true;
+                    waitUntil(2.7,100);
                     break;
-                case 12:
+
+                case 101:
                     transforming(false);
-                    follower.followPath(pick3rdElement,true);
+                    follower.followPath(pick1stElement,true);
                     intaking(true);
-                    setPathState(13);
+                    setPathState(102);
                     break;
-                case 13:
+                case 102:
                     if(!follower.isBusy()) {
-                        follower.followPath(gotoShootPoseBending3rd, true);
-                        setPathState(14);
+                        follower.followPath(gotoShootPose,true);
+                        setPathState(103);
                     }
                     break;
-                case 14:
-                    if(!follower.isBusy()){
-                        setPathState(15);
+                case 103:
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -10 > hardware.shooter.getVelocity()  / 60 * 28){
+                        setPathState(104);
                     }
                     break;
-                case 15:
+                case 104:
                     transforming(true);
-                    waitUntil(2.7,16);
+                    done_1st = true;
+                    waitUntil(2.7,100);
                     break;
-                case 16:
+
+                case 301:
+                    transforming(false);
+                    follower.followPath(pick3rdElement);
+                    intaking(true);
+                    setPathState(302);
+                    break;
+                case 302:
+                    if(!follower.isBusy()){
+                        follower.followPath(gotoShootPoseBending3rd);
+                        setPathState(303);
+                    }
+                    break;
+                case 303:
+                    if(!follower.isBusy()&& Configurable_Constants.shooterLongRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
+                        setPathState(304);
+                    }
+                    break;
+                case 304:
+                    transforming(true);
+                    done_3rd = true;
+                    waitUntil(2.7,100);
+                    break;
+
+                case 3:
                     transforming(false);
                     shooting(false);
-                    follower.followPath(goToGateNoPushStraight,true);
-                    setPathState(17);
+                    follower.followPath(Enable_Hide() ? goToHidePoint : goToGateNoPushStraight);
+                    setPathState(4);
                     break;
-                case 17:
+                case 4:
                     break;
             }
         }
-        public void setPathState (int pState){
+        // 設定機器狀態 (會重製某些時鐘)
+        private void setPathState (int pState){
             pathState = pState;
             pathTimer.resetTimer();
             actionTimer.resetTimer();
         }
-
+        // 當機器開始時的迴圈 一直更新東西 和顯示數據
         @Override
         public void loop () {
             follower.update();
             autonomousPathUpdate();
             Configurable_Constants.botPose = follower.getPose();
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterLongRangeSpeed);
+
             telemetry.addData("path state", pathState);
             telemetry.addData("x", follower.getPose().getX());
             telemetry.addData("y", follower.getPose().getY());
@@ -276,17 +380,22 @@ public class Auto {
             telemetry.addData("follower狀態", follower.isBusy() ? "true" : "false");
             telemetry.addData("timer",actionTimer.getElapsedTimeSeconds());
             telemetry.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
-
+        // 機器一開始做準備的地方(機器還不能動!!)
         @Override
         public void init () {
             shootTargetPose= new Pose(
-                    getAutoAimTargetPose().getY(),
-                    getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError)
+                    Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0)),
+                    getAutoAimTargetPose().getY()
             );
 
             hardware.init(hardwareMap);
-            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, 0, Configurable_Constants.shooter_nearlunch_F);
+            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_longlunch_KP, 0, Configurable_Constants.shooter_longlunch_KD, Configurable_Constants.shooter_longlunch_F);
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterLongRangeSpeed);
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -309,184 +418,233 @@ public class Auto {
             Drawing.drawRobot(follower.getPose());
             Drawing.sendPacket();
             telemetryM.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
-
+        // 機器開始時會做的第一件事情
         @Override
         public void start () {
             opmodeTimer.resetTimer();
             setPathState(Configurable_Constants.autostartstate);
             intaking(false);
         }
-
-        public void intaking ( boolean onOff){
+        // 撿球開關的副程式
+        private void intaking ( boolean onOff){
             double power = onOff ? 1 : 0;
             hardware.intake.setPower(power);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
         }
-
-        public void transforming(boolean onOff){
+        // 傳輸到射擊輪開關的副程式
+        private void transforming(boolean onOff){
             double power = onOff ? 1 : 0;
             hardware.intake.setPower(power*0.3);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
-            hardware.transferServo2.setPower(power);
+            hardware.transferServo2.setPower(power*0.6);
         }
-        public void shooting(boolean onOff){
+        // 射擊輪開關的副程式
+        private void shooting(boolean onOff){
             double[] solution = all_calculation.solveShooterRPMAndAngle();
-            /*if(whichzone ==0 || whichzone ==2) {
-                if (solution[0] > 0) {
-                    double rpm = solution[0];
-                    double angleRad = solution[1];
-
-                    double rawTargetPosition = all_calculation.calculateServoPosition(angleRad, 180, whichzone);
-                    hardware.shooter.setVelocity(rpm / 60 * 28);
-                    hardware.angleController.setPosition(rawTargetPosition);
-                } else {
-                    hardware.shooter.setVelocity(5000 / 60 * 28);
-                }
-            }else {
-                hardware.shooter.setVelocity(5000/ 60 * 28);
-            }
             if(onOff){
                 hardware.shooter.setVelocity(Configurable_Constants.shooterLongRangeSpeed / 60 * 28);
             }else{
                 hardware.shooter.setVelocity(0);
             }
         }
-        public void waitUntil(double sec, int nextstate){
-            if(actionTimer.getElapsedTimeSeconds() >= sec)setPathState(nextstate);
-        }
-
-
-    }
+        // 等待的副程式
+        private void waitUntil(double sec, int nextstate){
+                if(actionTimer.getElapsedTimeSeconds() >= sec)setPathState(nextstate);
+            }
+}
 
     @Autonomous(name = "紅方遠自動程式", group = "RED")
-    public static class RedFFarAutonomous extends BaseFarAuto {
+    public static class RedFarAutonomous extends BaseFarAuto {
+        @Override //第一排的球
+        protected boolean Enable_1st(){return false;}
+        @Override //第二排的球
+        protected boolean Enable_2nd(){
+            return false;
+        }
+        @Override //第三排的球
+        protected boolean Enable_3rd(){
+            return false;
+        }
+        @Override //要不要躲
+        protected boolean Enable_Hide(){
+            return true;
+        }
+        @Override //要不要去推牆
+        protected boolean Enable_gate(){
+            return false;
+        }
         @Override
         protected boolean getIsBlue() {
             return false;
         }
         @Override
-        protected Pose getAutoAimTargetPose(){
-            return new Pose(Configurable_Constants.target_X,144);
+        protected Pose getAutoAimTargetPose() {
+            return new Pose(Configurable_Constants.target_X+ InGameTuning.nearLunchBallXError,144);
         }
-    }
 
+    }
     @Autonomous(name = "藍方遠自動程式", group = "BLUE")
     public static class BlueFarAutonomous extends BaseFarAuto {
-        @Override
+        @Override //第一排球
+        protected boolean Enable_1st(){
+            return false;
+        }
+        @Override //第二排球
+        protected boolean Enable_2nd(){
+            return false;
+        }
+        @Override //第三排球
+        protected boolean Enable_3rd(){
+            return false;
+        }
+        @Override //要不要躲
+        protected boolean Enable_Hide(){
+            return true;
+        }
+        @Override //要不要推門
+        protected boolean Enable_gate(){
+            return false;
+        }
+        @Override //要不要躲
         protected boolean getIsBlue() {
             return true;
         }
         @Override
-        protected Pose getAutoAimTargetPose(){
-            return new Pose(Configurable_Constants.target_X,144);
+        protected Pose getAutoAimTargetPose() {
+            return new Pose(Configurable_Constants.target_X+ InGameTuning.nearLunchBallXError,144);
         }
-    }*/
 
-    /*abstract static class BasCloseAuto extends OpMode {
+    }
 
-        //protected int pattern_number = 0;
-        //變數設定
-        protected TelemetryManager telemetryM;
-        protected Follower follower;
-        protected Timer pathTimer, actionTimer, opmodeTimer;
-        protected int pathState = 21;
 
-        protected Hardware hardware = new Hardware();
+    abstract static class BasCloseAuto extends OpMode {
+        private TelemetryManager telemetryM;
+        private Follower follower;
+        private Timer pathTimer, actionTimer, opmodeTimer;
+        private int pathState = 21;
+
+        private Hardware hardware = new Hardware();
 
         protected abstract boolean getIsBlue();
-
-        protected All_Calculation all_calculation;
+        protected abstract boolean Enable_1st();
+        protected abstract boolean Enable_2nd();
+        protected abstract boolean Enable_3rd();
+        protected abstract boolean Enable_Hide();
+        protected abstract boolean Enable_gate();
+        private boolean done_1st = false, done_2nd= false, done_3rd = false;
+        private All_Calculation all_calculation;
 
         protected abstract Pose getAutoAimTargetPose();
 
-        protected  Pose shootTargetPose;
-        protected final Pose startingPose = new Pose(
-                Math.abs(96 - (getIsBlue() ? 144 : 0)),
-                132.2,
-                Math.toRadians(Math.abs(90 - (getIsBlue() ? 180 : 0)))
-        );
+        private   Pose shootTargetPose;
 
-        protected final Pose shootPose = new Pose(
+
+        private final Pose shootPose = new Pose(
                 Math.abs(96 - (getIsBlue() ? 144 : 0)),
                 86
         );
-        protected final Pose humanElementsPose = new Pose(
+        private final Pose startingPose = new Pose(
+                Math.abs(118.3 - (getIsBlue() ? 144 : 0)),
+                127.5,
+                Math.toRadians(Math.abs(40.3 - (getIsBlue() ? 180 : 0)))
+        );
+        private final Pose humanElementsPose = new Pose(
                 Math.abs(129 - (getIsBlue() ? 144 : 0)),
                 11,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose firstElement = new Pose(
+
+        private final Pose firstElement = new Pose(
                 Math.abs(130.5 - (getIsBlue() ? 144 : 0)),
                 35,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose firstElementControlPoint = new Pose(
+        private final Pose firstElementControlPoint = new Pose(
                 Math.abs(80 - (getIsBlue() ? 144 : 0)),
-                35
+                30
         );
-        protected final Pose firstElementGoToShootPose = new Pose(
+        private final Pose firstElementGoToShootPose = new Pose(
                 Math.abs(110 - (getIsBlue() ? 144 : 0)),
                 35
         );
 
-        protected final Pose SecondElement = new Pose(
+        private final Pose SecondElement = new Pose(
                 Math.abs(130.5 - (getIsBlue() ? 144 : 0)),
                 60,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose SecondElementControlPoint = new Pose(
+        private final Pose SecondElementControlPoint = new Pose(
                 Math.abs(80 - (getIsBlue() ? 144 : 0)),
                 57
         );
-        protected final Pose thirdElement = new Pose(
+        private final Pose thirdElement = new Pose(
                 Math.abs(125 - (getIsBlue() ? 144 : 0)),
                 84,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose thirdElementControlPoint = new Pose(
+        private final Pose thirdElementControlPoint = new Pose(
                 Math.abs(120 - (getIsBlue() ? 144 : 0)),
                 81
         );
 
-        protected final Pose gateDidPush = new Pose(
+        private final Pose gateDidPush = new Pose(
                 Math.abs(124.6 - (getIsBlue() ? 144 : 0)),
                 70,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
-        protected final Pose gateNoPush = new Pose(
+        private final Pose gateNoPush = new Pose(
                 Math.abs(115 - (getIsBlue() ? 144 : 0)),
                 70,
                 Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
         );
         //this GateControlPoint is for shootPose to gate
-        protected final Pose goToGateControlPoint = new Pose(
+        private final Pose goToGateControlPoint = new Pose(
                 Math.abs(110 - (getIsBlue() ? 144 : 0)),
                 51.4
         );
-        protected final Pose gateGoToShootControlPoint = new Pose(
+        private final Pose gateGoToShootControlPoint = new Pose(
                 Math.abs(75 - (getIsBlue() ? 144 : 0)),
                 67
         );
-        protected final Pose finishPoint = new Pose(
+        private final Pose finishPoint = new Pose(
                 Math.abs(88 -(getIsBlue()? 144:0)),
                 48
                 ,Math.toRadians(Math.abs(180 - (getIsBlue() ? 180 : 0)))
         );
+        private final Pose hidePoint = new Pose(
+                Math.abs(123 -(getIsBlue()? 144:0)),
+                103
+                ,Math.toRadians(Math.abs(180 - (getIsBlue() ? 180 : 0)))
+        );
+        private final Pose hideControlPoint = new Pose(
+                Math.abs(102 -(getIsBlue()? 144:0)),
+                111
+        );
 
-
-        protected Path start;
-        protected PathChain pick1stElement, gotoShootPose,goToShootPoseGateBending,
+        private Path start;
+        private PathChain pick1stElement, gotoShootPose,goToShootPoseGateBending,
                 pick2ndElement,gotoShootPoseBending2nd,
                 pick3rdElement,gotoShootPoseBending1st,
                 goToGateDidPushBending,goToGateNoPushStraight
-                ,goToFinishPoint;
+                ,goToFinishPoint,goToHidePoint;
 
-        public void buildPath() {
+        private void buildPath() {
             start = new Path(new BezierLine(startingPose, shootPose));
-            start.setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose));
+            start.setHeadingInterpolation(HeadingInterpolator.piecewise(
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.0, 0.1,
+                            HeadingInterpolator.constant(startingPose.getHeading())
+                    ),
+
+                    new HeadingInterpolator.PiecewiseNode(
+                            0.1, 1.0,
+                            HeadingInterpolator.facingPoint(shootTargetPose)
+                    )
+            ));
 
 
 
@@ -511,13 +669,32 @@ public class Auto {
                     .build();
             gotoShootPoseBending2nd = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose,SecondElementControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             goToShootPoseGateBending = follower.pathBuilder()
                     .addPath(new BezierCurve(follower::getPose, gateGoToShootControlPoint,shootPose))
-                    .setHeadingInterpolation(HeadingInterpolator.facingPoint(shootTargetPose))
-                    .setHeadingConstraint(0.01)
+                    .setHeadingInterpolation(HeadingInterpolator.piecewise(
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.0, 0.3,
+                                    HeadingInterpolator.constant(gateDidPush.getHeading())
+                            ),
+
+                            new HeadingInterpolator.PiecewiseNode(
+                                    0.3, 1.0,
+                                    HeadingInterpolator.facingPoint(shootTargetPose)
+                            )
+                    ))
                     .build();
 
             gotoShootPose = follower.pathBuilder()
@@ -537,105 +714,135 @@ public class Auto {
                     .addPath(new BezierLine(follower::getPose,finishPoint))
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,finishPoint.getHeading(),0.6))
                     .build();
+
+            goToHidePoint = follower.pathBuilder()
+                    .addPath(new BezierCurve(follower::getPose, hideControlPoint,hidePoint))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, hidePoint.getHeading(),1))
+                    .build();
         }
 
-        public void autonomousPathUpdate() {
+        private void autonomousPathUpdate() {
             switch (pathState) {
                 case 0:
-                        shooting(true);
-                        hardware.angleController.setPosition(Configurable_Constants.angleControlNear);
-                        follower.followPath(start, true);
-                        setPathState(1);
+                    shooting(true);
+                    hardware.angleController.setPosition(Configurable_Constants.angleControlNear);
+                    follower.followPath(start, true);
+                    setPathState(1);
                     break;
                 case 1:
-                    if(!follower.isBusy()) {
+                    if (!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28) {
                         setPathState(2);
                     }
                     break;
                 case 2:
                     transforming(true);
-                    waitUntil(2.7,3);
+                    waitUntil(3.2, 100);
                     break;
-                case 3:
+                case 100:
+                    if(Enable_2nd() && !done_2nd){
+                        setPathState(201);
+                    } else if (Enable_3rd() && !done_3rd) {
+                        setPathState(301);
+                    } else if (Enable_1st() && ! done_1st) {
+                        setPathState(101);
+                    }else setPathState(3);
+                    break;
+
+                case 301:
                     transforming(false);
                     follower.followPath(pick3rdElement,true);
                     intaking(true);
-                    setPathState(4);
+                    setPathState(302);
                     break;
-                case 4:
+                case 302:
                     if(!follower.isBusy()) {
                         follower.followPath(gotoShootPose,true);
-                        setPathState(5);
+                        setPathState(303);
                     }
                     break;
-                case 5:
-                    if(!follower.isBusy()){
-                        setPathState(6);
+                case 303:
+                    if(!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
+                        setPathState(304);
                     }
                     break;
-                case 6:
+                case 304:
                     transforming(true);
-                    waitUntil(2.7,7);
+                    done_3rd = true;
+                    waitUntil(3.2,100);
                     break;
-                case 7:
+
+                case 201:
                     transforming(false);
                     follower.followPath(pick2ndElement,true);
                     intaking(true);
-                    setPathState(8);
+                    setPathState(202);
                     break;
-                case 8:
+                case 202:
                     if(!follower.isBusy()) {
-                        follower.followPath(goToGateDidPushBending,true);
-                        setPathState(9);
+                        if(Enable_gate()) {
+                            follower.followPath(goToGateDidPushBending, true);
+                            setPathState(203);
+                        }else {
+                            follower.followPath(gotoShootPoseBending2nd, true);
+                            setPathState(204);
+                        }
                     }
                     break;
-                case 9:
+                case 203:
                     if(!follower.isBusy()){
-                        follower.followPath(goToShootPoseGateBending,true);
-                        setPathState(10);
+                        follower.followPath(goToShootPoseGateBending, true);
+                        setPathState(204);
                     }
                     break;
-                case 10:
-                    if(!follower.isBusy()){
-                        setPathState(11);
+                case 204:
+                    if(!follower.isBusy()&& Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
+                        setPathState(205);
                     }
                     break;
-                case 11:
+                case 205:
                     transforming(true);
-                    waitUntil(2.7,12);
+                    done_2nd = true;
+                    waitUntil(3.2,100);
                     break;
-                case 12:
+
+
+                case 101:
                     transforming(false);
                     follower.followPath(pick1stElement,true);
                     intaking(true);
-                    setPathState(13);
+                    setPathState(102);
                     break;
-                case 13:
+                case 102:
                     if(!follower.isBusy()) {
                         follower.followPath(gotoShootPoseBending1st, true);
-                        setPathState(14);
+                        setPathState(103);
                     }
                     break;
-                case 14:
-                    if(!follower.isBusy()){
-                        setPathState(15);
+                case 103:
+                    if(!follower.isBusy() && Configurable_Constants.shooterNearRangeSpeed / 60 * 28 -50 > hardware.shooter.getVelocity()  / 60 * 28){
+                        setPathState(104);
                     }
                     break;
-                case 15:
+                case 104:
                     transforming(true);
-                    waitUntil(2.7,16);
+                    done_1st = true;
+                    waitUntil(2.9,100);
                     break;
-                case 16:
+
+
+                case 3:
                     transforming(false);
                     shooting(false);
-                    follower.followPath(goToGateNoPushStraight,true);
-                    setPathState(17);
+                    follower.followPath(Enable_Hide()? goToHidePoint:goToGateNoPushStraight,true);
+                    setPathState(4);
                     break;
-                case 17:
+                case 4:
+                    if(!follower.isBusy()){
+                    }
                     break;
             }
         }
-        public void setPathState (int pState){
+        private void setPathState (int pState){
             pathState = pState;
             pathTimer.resetTimer();
             actionTimer.resetTimer();
@@ -645,6 +852,10 @@ public class Auto {
         public void loop () {
             follower.update();
             autonomousPathUpdate();
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterNearRangeSpeed);
             Configurable_Constants.botPose = follower.getPose();
             telemetry.addData("path state", pathState);
             telemetry.addData("x", follower.getPose().getX());
@@ -652,18 +863,26 @@ public class Auto {
             telemetry.addData("heading", Math.toDegrees(follower.getPose().getHeading()));
             telemetry.addData("follower狀態", follower.isBusy() ? "true" : "false");
             telemetry.addData("timer",actionTimer.getElapsedTimeSeconds());
+
+            move.dashboard.sendTelemetryPacket(packet);
             telemetry.update();
         }
 
         @Override
         public void init () {
-            shootTargetPose= new Pose(
-                    getAutoAimTargetPose().getY(),
-                    getAutoAimTargetPose().getX() + ((getIsBlue() ? 1:-1) * InGameTuning.nearLunchBallXError)
-            );
+
 
             hardware.init(hardwareMap);
-            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, 0, Configurable_Constants.shooter_nearlunch_F);
+            hardware.shooter.setVelocityPIDFCoefficients(Configurable_Constants.shooter_nearlunch_KP, 0, Configurable_Constants.shooter_nearlunch_KD, Configurable_Constants.shooter_nearlunch_F);
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("shooterRPM", hardware.shooter.getVelocity() * 60 / 28);
+            packet.put("shooterTargetRPM", Configurable_Constants.shooterNearRangeSpeed);
+
+            shootTargetPose= new Pose(
+                    Math.abs (getAutoAimTargetPose().getX() -(getIsBlue() ? 144 : 0)),
+                    getAutoAimTargetPose().getY()
+            );
 
             pathTimer = new Timer();
             opmodeTimer = new Timer();
@@ -686,6 +905,7 @@ public class Auto {
             Drawing.drawRobot(follower.getPose());
             Drawing.sendPacket();
             telemetryM.update();
+            move.dashboard.sendTelemetryPacket(packet);
         }
 
         @Override
@@ -695,50 +915,55 @@ public class Auto {
             intaking(false);
         }
 
-        public void intaking ( boolean onOff){
+        private void intaking ( boolean onOff){
             double power = onOff ? 1 : 0;
             hardware.intake.setPower(power);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
         }
 
-        public void transforming(boolean onOff){
+        private void transforming(boolean onOff){
             double power = onOff ? 1 : 0;
             hardware.intake.setPower(power*0.3);
             hardware.transferServo0.setPower(power);
             hardware.transferServo1.setPower(power);
-            hardware.transferServo2.setPower(power);
+            hardware.transferServo2.setPower(power *0.3);
         }
-        public void shooting(boolean onOff){
+        private void shooting(boolean onOff){
             double[] solution = all_calculation.solveShooterRPMAndAngle();
-            /*if(whichzone ==0 || whichzone ==2) {
-                if (solution[0] > 0) {
-                    double rpm = solution[0];
-                    double angleRad = solution[1];
-
-                    double rawTargetPosition = all_calculation.calculateServoPosition(angleRad, 180, whichzone);
-                    hardware.shooter.setVelocity(rpm / 60 * 28);
-                    hardware.angleController.setPosition(rawTargetPosition);
-                } else {
-                    hardware.shooter.setVelocity(5000 / 60 * 28);
-                }
-            }else {
-                hardware.shooter.setVelocity(5000/ 60 * 28);
-            }
             if(onOff){
-                hardware.shooter.setVelocity(4300 / 60 * 28);
+                hardware.shooter.setVelocity(Configurable_Constants.shooterNearRangeSpeed / 60 * 28);
             }else{
                 hardware.shooter.setVelocity(0);
             }
         }
-        public void waitUntil(double sec, int nextstate){
+        private void waitUntil(double sec, int nextstate){
                 if(actionTimer.getElapsedTimeSeconds() >= sec)setPathState(nextstate);
         }
-
 
     }
     @Autonomous(name = "紅方近自動程式", group = "RED")
     public static class RedCloseAutonomous extends BasCloseAuto {
+        @Override //第一排球
+        protected boolean Enable_1st(){
+            return true;
+        }
+        @Override //第二排球
+        protected boolean Enable_2nd(){
+            return true;
+        }
+        @Override //第三排球
+        protected boolean Enable_3rd(){
+            return true;
+        }
+        @Override //要不要躲
+        protected boolean Enable_Hide(){
+            return false;
+        }
+        @Override //要不要推門
+        protected boolean Enable_gate(){
+            return true;
+        }
         @Override
         protected boolean getIsBlue() {
             return false;
@@ -752,6 +977,26 @@ public class Auto {
     @Autonomous(name = "藍方近自動程式", group = "BLUE")
     public static class BlueCloseAutonomous extends BasCloseAuto {
         @Override
+        protected boolean Enable_1st(){
+            return true;
+        }
+        @Override
+        protected boolean Enable_2nd(){
+            return true;
+        }
+        @Override
+        protected boolean Enable_3rd(){
+            return true;
+        }
+        @Override
+        protected boolean Enable_Hide(){
+            return false;
+        }
+        @Override
+        protected boolean Enable_gate(){
+            return true;
+        }
+        @Override
         protected boolean getIsBlue() {
             return true;
         }
@@ -761,6 +1006,5 @@ public class Auto {
         }
 
     }
- */
 }
 

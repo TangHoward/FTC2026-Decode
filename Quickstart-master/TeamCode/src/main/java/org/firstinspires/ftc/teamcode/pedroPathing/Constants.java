@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
+    // 機器數值調整 請見 http://youtube.com/watch?v=vihb2LPtSK0&t
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(15)
             .forwardZeroPowerAcceleration(-36.75493187591892)
