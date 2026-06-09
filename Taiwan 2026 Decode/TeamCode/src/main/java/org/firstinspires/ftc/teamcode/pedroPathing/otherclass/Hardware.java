@@ -10,8 +10,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
 public class Hardware {
     // 各類物品宣告
     //直流馬達
