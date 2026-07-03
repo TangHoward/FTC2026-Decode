@@ -22,7 +22,7 @@ public class Control_Mode {
         private static Follower follower;
 
         private Hardware hardware   = new Hardware();
-        private ShooterCalculator shooterCalculator;
+        private ShooterCalculator shooterCalculator = new ShooterCalculator(follower);
         private ServoAngleCalculation servoAngleCalculation;
         private TurretController turretController;
         private boolean isShooting = false;
@@ -39,7 +39,7 @@ public class Control_Mode {
             servoAngleCalculation = new ServoAngleCalculation();
             hardware.init(hardwareMap);
             follower = Constants.createFollower(hardwareMap);
-            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 53 : 50);
+            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56);
             if(Auto_Mode.robotPose != null && Auto_Mode.turretAngle != null) {
                 follower.setStartingPose(Auto_Mode.robotPose);
             }else {
@@ -47,7 +47,6 @@ public class Control_Mode {
                 hardware.rev9AxisImu.resetYaw();
             }
             follower.update();
-            shooterCalculator = new ShooterCalculator(follower);
 
             shooterCalculator.setGoal(getIsBlue() ? 2:142, 142, 44);
             turretController = new TurretController(hardware, follower);
@@ -72,6 +71,7 @@ public class Control_Mode {
 
         @Override
         public void loop() {
+            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56);
             turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
             ShooterCalculator.ShootResult shooterResult = shooterCalculator.update();
 
@@ -92,7 +92,7 @@ public class Control_Mode {
             if (!gamepad1.b) {
                 isShooting = false;
             } else if (!isShooting) {
-                if (rpmError > -50 && rpmError < 100) {
+                if (rpmError > -0 && rpmError < 100) {
                     isShooting = true;
                 }
             }
