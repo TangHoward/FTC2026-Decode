@@ -71,7 +71,8 @@ public class Control_Mode {
 
         @Override
         public void loop() {
-            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56);
+            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56); // 這裡才是真正要調的 砲台角度 如果沒問題的話
+                                                                                        // 阿這個數值的意思是砲台的射球角度 數字越高射越直 數字越小拋越高
             turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
             ShooterCalculator.ShootResult shooterResult = shooterCalculator.update();
 
