@@ -39,6 +39,7 @@ public class Control_Mode {
             servoAngleCalculation = new ServoAngleCalculation();
             hardware.init(hardwareMap);
             follower = Constants.createFollower(hardwareMap);
+            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 53 : 50);
             if(Auto_Mode.robotPose != null && Auto_Mode.turretAngle != null) {
                 follower.setStartingPose(Auto_Mode.robotPose);
             }else {
@@ -72,7 +73,6 @@ public class Control_Mode {
         @Override
         public void loop() {
             turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
-            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 72 : 72);
             ShooterCalculator.ShootResult shooterResult = shooterCalculator.update();
 
             follower.setTeleOpDrive(
