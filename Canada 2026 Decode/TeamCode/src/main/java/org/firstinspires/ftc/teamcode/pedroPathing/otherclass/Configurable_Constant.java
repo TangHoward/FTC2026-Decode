@@ -4,7 +4,7 @@ import com.bylazar.configurables.annotations.Configurable;
 
 @Configurable
 public class Configurable_Constant {
-    public static double test_motor_Speed = 3500;
+    public static double turretAngleOffset = 0;
 
 
 }
