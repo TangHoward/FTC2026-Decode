@@ -49,6 +49,8 @@ public class TurretController {
     private double lastBaseAngleRad = Math.toRadians(47.5);
     private double lastTxCorrectionDeg = 0.0;
     private boolean lastTxApplied = false;
+    /** 最近一次的 Tx 原始誤差（度），= tx.txDeg - txTargetDeg，尚未經過 PID 運算，僅在 APRIL_TAG 模式且看得到 tag 時更新。 */
+    private double lastTxErrorDeg = 0.0;
     private double txTargetDeg = 0.0;
 
     // ── 瞄準模式狀態 ──────────────────────────────────────
@@ -145,26 +147,91 @@ public class TurretController {
      * 用 Limelight 重新定位 Follower（更新 Pedro Pose）。
      * <p>
      * LimelightLocalization.update() 要的參數是
-     * 「砲台相對底盤的本地角度」（turretLocalAngleRad，
-     * 0°=機器右方，90°=機器前方，CCW+），也就是 currentAngleDeg
-     * 本身，不需要（也不應該）先換算成場地朝向——
-     * update() 內部會自己拿 follower.getHeading() 跟這個角度組合，
-     * 算出砲台的場地朝向去餵給 MT2，並在讀回結果後正確反推底盤朝向。
+     * 「砲台絕對場地朝向」（turretLocalAngleRad，這裡實際傳入
+     * rev9AxisImu 量到的 yaw + offset，跟 IMU_PID 瞄準模式用同一顆
+     * IMU、同樣的定義），update() 內部會自己拿這個角度去餵給 MT2，
+     * 並在讀回結果後做品質過濾（角速度、距離、時序一致性等）。
+     * <p>
+     * 融合改用 fuseToPedroAdaptive()：依 tag 數與距離自動決定要
+     * 相信視覺多少，並對單次融合的位移量/角度做限幅，避免機器人
+     * 因為視覺讀值跟目前估計差距較大就被瞬間「拉」過去。
      */
     public boolean relocalizeWithLimelight() {
         double turretGobalRad = Math.toRadians(hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset);
         LimelightLocalization.LLPose pose = localization.update(turretGobalRad);
         if (pose.valid) {
-            localization.fuseToPedro(pose, 0.5);
-            return true;
+            return localization.fuseToPedroAdaptive();
         }
         return false;
     }
 
+    /**
+     * 「停止重新定位」流程用：呼叫端（Control_Mode）應該在呼叫這個方法的
+     * 同時把搖桿輸入歸零、讓機器人真正停下來。LimelightLocalization.update()
+     * 內部的平移/角速度閘控會確認底盤跟砲台都夠靜止才採用讀值，通過時序
+     * 一致性檢查後，才用 fuseToPedroStationary()（不做保守限幅）做修正。
+     * <p>
+     * 建議用法：driver 按住某個鍵時，每個 loop 都呼叫這個方法，直到
+     * getLimelightRejectReason() 回傳 "OK" 或放開按鍵為止。
+     */
+    public boolean relocalizeStationary() {
+        double turretGobalRad = Math.toRadians(hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset);
+        LimelightLocalization.LLPose pose = localization.update(turretGobalRad);
+        if (pose.valid) {
+            return localization.fuseToPedroStationary();
+        }
+        return false;
+    }
+
+    /** 除錯用：回傳最近一次視覺定位被拒絕/採用的原因，方便比賽現場看 telemetry 除錯。 */
+    public String getLimelightRejectReason() {
+        return localization.getLastRejectReason();
+    }
+
+    public double getTurretAngularVelocityDegPerSec() {
+        return localization.getTurretAngularVelocityDegPerSec();
+    }
+
+    public double getChassisAngularVelocityDegPerSec() {
+        return localization.getChassisAngularVelocityDegPerSec();
+    }
+
+    /** 一般用法：正常瞄準，不凍結砲台。 */
     public void update() {
+        update(false);
+    }
+
+    /**
+     * @param freezeAim 為 true 時（例如「停止重新定位」流程中），完全不
+     *                  重新計算/移動砲台角度，只維持在目前位置：
+     *                  1) 讓 sampleMotion() 估計出的砲台角速度盡快收斂到 0，
+     *                     不會因為砲台還在微調而一直被角速度閘控擋掉；
+     *                  2) 相機視角在這幾幀之間保持穩定，有利於視覺讀值一致性；
+     *                  3) 順便重置 IMU / Tx PID 的計時（不清積分值），避免
+     *                     解凍後第一次 update() 因為 dt 暴增（凍結了好幾幀）
+     *                     造成微分項暴衝——這跟 setAimMode() 切換時的處理
+     *                     邏輯一致。
+     */
+    public void update(boolean freezeAim) {
         double robotX = follower.getPose().getX();
         double robotY = follower.getPose().getY();
         double robotHeadingRad = follower.getPose().getHeading();
+
+        // 每個 loop 都取樣一次目前的砲台角度／底盤朝向，供
+        // LimelightLocalization 估計角速度以做動態品質過濾。
+        // 用「上一輪」的 currentAngleDeg（尚未被本輪覆寫）取樣即可，
+        // 跟實際呼叫間隔（每個 loop 都呼叫）比對起來誤差可忽略。
+        localization.sampleMotion(Math.toRadians(currentAngleDeg), robotHeadingRad);
+
+        if (freezeAim) {
+            // 凍結中：不改 currentAngleDeg、不呼叫 setPosition()，
+            // 砲台維持在目前角度不動。只重置計時，避免解凍後 dt 暴衝。
+            imuLastTimeNs = 0L;
+            txLastTimeNs  = 0L;
+            lastTxCorrectionDeg = 0.0;
+            lastTxApplied = false;
+            return;
+        }
 
         double turretCX = robotX
                 + LimelightLocalization.TURRET_TO_ROBOT_IN
@@ -206,6 +273,7 @@ public class TurretController {
             LimelightLocalization.TxResult tx = localization.getTxForTag(currentTarget.tagId);
             if (tx.valid) {
                 double txError = tx.txDeg - txTargetDeg;
+                lastTxErrorDeg = txError;
 
                 long nowNs = System.nanoTime();
                 double dt = (txLastTimeNs == 0L) ? 0.0 : (nowNs - txLastTimeNs) / 1e9;
@@ -233,6 +301,8 @@ public class TurretController {
             } else {
                 // tag 短暫看不到時，只重置 dt 計時避免下次 dt 突然暴增造成微分項暴衝，
                 // 但保留 txIntegralDeg，避免每次 tag 閃爍就把累積的修正歸零。
+                // 注意：lastTxErrorDeg 不在此清除，維持上一次看到 tag 時的誤差值，
+                // 方便 telemetry 顯示「最後一次量到的誤差」而不是突然跳成 0。
                 txLastTimeNs = 0L;
                 lastTxCorrectionDeg = 0.0;
                 lastTxApplied = false;
@@ -298,6 +368,16 @@ public class TurretController {
 
     public double getLastTxCorrectionDeg() {
         return lastTxCorrectionDeg;
+    }
+
+    /**
+     * 取得最近一次的 Tx 原始誤差（度），= 視覺讀到的 tx - txTargetDeg，
+     * 尚未經過 PID 運算（跟 getLastTxCorrectionDeg() 回傳的「PID 輸出修正量」不同）。
+     * 只有在 APRIL_TAG 模式且看得到 tag 時才會更新；tag 消失時維持上一次的值，
+     * 不會跳回 0，方便 telemetry 判斷「最後一次量到的誤差有多大」。
+     */
+    public double getLastTxErrorDeg() {
+        return lastTxErrorDeg;
     }
 
     public boolean isLastTxApplied() {

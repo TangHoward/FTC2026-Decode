@@ -23,9 +23,9 @@ Constants {
             .mass(18)
             .forwardZeroPowerAcceleration(-33.8028238641209)
             .lateralZeroPowerAcceleration(-78.01025375605516)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.08,0,0.02,0.02))
-            .headingPIDFCoefficients(new PIDFCoefficients(1.55,0,0.06,0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01,0.0,0.00005,0.6,0.001))
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.1,0,0.009,0.02))
+            .headingPIDFCoefficients(new PIDFCoefficients(1.4,0,0.05,0.028))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.008,0.0,0.0005,0.6,0.025))
             ;
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99,

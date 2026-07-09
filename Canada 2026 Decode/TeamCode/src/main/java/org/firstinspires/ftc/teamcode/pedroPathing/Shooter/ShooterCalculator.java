@@ -61,6 +61,23 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
  *   由 setVelocityCompensationEnabled(true/false) 控制。
  *   關閉時，update() 一律回傳偏好角度搜索的靜止解。
  * ============================================================
+ * 發射效率覆寫（新增）
+ *   預設讀取 Tuning_Constant.lunch_EFFICIENCY（支援 Dashboard 即時調整）。
+ *   若呼叫 setLaunchEfficiency(double)，會改用該覆寫值，
+ *   直到呼叫 resetLaunchEfficiency() 為止才恢復讀 Tuning_Constant。
+ *   ⚠️ 此覆寫值為 static（所有 ShooterCalculator 實例共用），
+ *      若你只有一個 ShooterCalculator 實例（一般情況），不會有影響。
+ * ============================================================
+ * RPM 範圍限制（新增，不透過 Tuning_Constant）
+ *   預設允許範圍為 [0, MOTOR_MAX_RPM]（等同不限制，只受馬達物理上限約束）。
+ *   呼叫 setRpmRange(minRpm, maxRpm) 可自訂允許範圍，例如限制在
+ *   [1500, 2800] 之間。
+ *   若偏好角度算出的 RPM 超出範圍，calculatePreferredArc() 的雙向擴散
+ *   搜索會自動視為該角度不可行，繼續往外找其他角度，直到找到 RPM
+ *   落在範圍內、且不撞牆的可行解為止。
+ *   呼叫 resetRpmRange() 可恢復預設（不限制）。
+ *   ⚠️ 此設定為 per-instance（非 static），每個 ShooterCalculator 各自獨立。
+ * ============================================================
  */
 public class ShooterCalculator {
 
@@ -80,12 +97,55 @@ public class ShooterCalculator {
     public static final double MOTOR_MAX_RPM = 3500;
 
     /**
+     * 由 setLaunchEfficiency() 設定的發射效率覆寫值（0~1）。
+     * null 表示尚未透過程式設定，此時改讀 Tuning_Constant.lunch_EFFICIENCY。
+     * ⚠️ static：所有 ShooterCalculator 實例共用同一個覆寫值。
+     */
+    private static Double launchEfficiencyOverride = null;
+
+    /**
      * 發射效率係數（0~1）的存取方法。
-     * 每次需要時都直接讀 Tuning_Constant.lunch_EFFICIENCY，
+     * 優先讀 setLaunchEfficiency() 設定的覆寫值；
+     * 若未設定，直接讀 Tuning_Constant.lunch_EFFICIENCY，
      * 確保 Dashboard 調整能即時生效（不要複製成自己的 static 變數）。
      */
     private static double getLaunchEfficiency() {
-        return Tuning_Constant.lunch_EFFICIENCY;
+        return (launchEfficiencyOverride != null)
+                ? launchEfficiencyOverride
+                : Tuning_Constant.lunch_EFFICIENCY;
+    }
+
+    /**
+     * 設定發射效率（0~1），覆寫 Tuning_Constant.lunch_EFFICIENCY。
+     * 傳入值會被 clamp 到 (0, 1] 範圍，避免除以 0 或負數造成 RPM 計算異常暴衝。
+     *
+     * @param efficiency 發射效率係數
+     */
+    public static void setLaunchEfficiency(double efficiency) {
+        launchEfficiencyOverride = clamp(efficiency, 1e-3, 1.0);
+    }
+
+    /**
+     * 清除由 setLaunchEfficiency() 設定的值，恢復讀取 Tuning_Constant.lunch_EFFICIENCY。
+     */
+    public static void resetLaunchEfficiency() {
+        launchEfficiencyOverride = null;
+    }
+
+    /**
+     * 取得目前生效的發射效率值（不論是覆寫值還是 Tuning_Constant 的值）。
+     * 方便在 Telemetry 顯示目前用的是哪個來源。
+     */
+    public static double getCurrentLaunchEfficiency() {
+        return getLaunchEfficiency();
+    }
+
+    /**
+     * 查詢目前是否有透過 setLaunchEfficiency() 設定覆寫值。
+     * 方便在 Telemetry 顯示狀態。
+     */
+    public static boolean isLaunchEfficiencyOverridden() {
+        return launchEfficiencyOverride != null;
     }
 
     // ------------------------------------------------------------------
@@ -115,7 +175,7 @@ public class ShooterCalculator {
     private static final double WALL_POINT_2_Y = 115.08140947752125;
 
     /** 牆的物理高度 (inches)，不含球半徑 */
-    public static final double WALL_HEIGHT_IN = 38.75;
+    public static final double WALL_HEIGHT_IN = 32;
 
     /** 球的直徑 (inches)，13cm */
     public static final double BALL_DIAMETER_IN = 13.0 / 2.54;
@@ -169,6 +229,17 @@ public class ShooterCalculator {
     private double minAngleForComp = MECH_ALPHA_MIN;
     /** 仰角 Clamp 上限（速度補償用，數學慣例） */
     private double maxAngleForComp = MECH_ALPHA_MAX;
+
+    /**
+     * 允許使用的飛輪 RPM 下限。預設 0（不限制下限）。
+     * 由 setRpmRange() 設定，不透過 Tuning_Constant，per-instance 獨立。
+     */
+    private double minAllowedRpm = 0.0;
+    /**
+     * 允許使用的飛輪 RPM 上限。預設 MOTOR_MAX_RPM（馬達物理上限）。
+     * 由 setRpmRange() 設定，不透過 Tuning_Constant，per-instance 獨立。
+     */
+    private double maxAllowedRpm = MOTOR_MAX_RPM;
 
     /**
      * 由 setPreferredAngle() 設定的偏好角度（radians，數學慣例）。
@@ -269,6 +340,43 @@ public class ShooterCalculator {
      */
     public boolean isVelocityCompensationEnabled() {
         return velocityCompensationEnabled;
+    }
+
+    /**
+     * 設定允許使用的飛輪 RPM 範圍（不透過 Tuning_Constant，per-instance 獨立）。
+     * <p>
+     * 設定後，solveForAlpha() 算出的 RPM 若落在 [minRpm, maxRpm] 範圍外，
+     * 會視為該仰角不可行（valid=false）。calculatePreferredArc() 的雙向擴散
+     * 搜索因此會自動跳過這個角度，繼續往外找其他角度，直到找到 RPM
+     * 落在範圍內、且不撞牆的可行解為止。
+     * <p>
+     * ⚠️ maxRpm 仍然會被 clamp 到 [0, MOTOR_MAX_RPM]，不會超過馬達物理上限。
+     * minRpm 會被 clamp 到 [0, maxRpm]，避免下限大於上限造成無解。
+     *
+     * @param minRpm 允許的最低 RPM（例如避免球速太低打不到高度／距離）
+     * @param maxRpm 允許的最高 RPM（例如避免打太重、或想限制在某個安全範圍）
+     */
+    public void setRpmRange(double minRpm, double maxRpm) {
+        this.maxAllowedRpm = clamp(maxRpm, 0.0, MOTOR_MAX_RPM);
+        this.minAllowedRpm = clamp(minRpm, 0.0, this.maxAllowedRpm);
+    }
+
+    /**
+     * 清除由 setRpmRange() 設定的範圍，恢復預設（[0, MOTOR_MAX_RPM]，等同不限制）。
+     */
+    public void resetRpmRange() {
+        this.minAllowedRpm = 0.0;
+        this.maxAllowedRpm = MOTOR_MAX_RPM;
+    }
+
+    /** 取得目前生效的 RPM 下限。方便在 Telemetry 顯示。 */
+    public double getMinAllowedRpm() {
+        return minAllowedRpm;
+    }
+
+    /** 取得目前生效的 RPM 上限。方便在 Telemetry 顯示。 */
+    public double getMaxAllowedRpm() {
+        return maxAllowedRpm;
     }
 
     // ------------------------------------------------------------------
@@ -374,9 +482,10 @@ public class ShooterCalculator {
                 : clamp(Math.toRadians(Tuning_Constant.PREFERRED_ALPHA_DEG), MECH_ALPHA_MIN, MECH_ALPHA_MAX);
 
         // 先嘗試偏好角度本身
+        // RPM 是否落在允許範圍內已經在 solveForAlpha() 內檢查過（valid 會反映結果），
+        // 這裡不需要重複檢查。
         ShootResult r = solveForAlpha(x, y, preferred);
-        if (r.valid && r.flywheelRPM <= MOTOR_MAX_RPM
-                && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, preferred, r.launchSpeed)) {
+        if (r.valid && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, preferred, r.launchSpeed)) {
             return r;
         }
 
@@ -395,8 +504,7 @@ public class ShooterCalculator {
             double alphaHigh = preferred + offset;
             if (alphaHigh <= MECH_ALPHA_MAX) {
                 ShootResult rHigh = solveForAlpha(x, y, alphaHigh);
-                if (rHigh.valid && rHigh.flywheelRPM <= MOTOR_MAX_RPM
-                        && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, alphaHigh, rHigh.launchSpeed)) {
+                if (rHigh.valid && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, alphaHigh, rHigh.launchSpeed)) {
                     return rHigh;
                 }
             }
@@ -405,8 +513,7 @@ public class ShooterCalculator {
             double alphaLow = preferred - offset;
             if (alphaLow >= MECH_ALPHA_MIN) {
                 ShootResult rLow = solveForAlpha(x, y, alphaLow);
-                if (rLow.valid && rLow.flywheelRPM <= MOTOR_MAX_RPM
-                        && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, alphaLow, rLow.launchSpeed)) {
+                if (rLow.valid && !hitsWall(robotX, robotY, goalFieldX, goalFieldY, alphaLow, rLow.launchSpeed)) {
                     return rLow;
                 }
             }
@@ -569,11 +676,20 @@ public class ShooterCalculator {
 
         // 關鍵保護：denom 趨近於 0（但還沒變成負數）時，v0/rpm 會像
         // 1/sqrt(denom) 一樣趨近無限大。denom<=0 的判斷抓不到這個情況，
-        // 因為它在變成負數之前會先衝過天文數字。這裡用 RPM 上限
+        // 因為它在變成負數之前會先衝過天文數字。這裡用 RPM 範圍上限
         // 直接擋住，避免回傳一個 valid=true 但數值離譜暴衝的結果。
-        if (rpm > MOTOR_MAX_RPM || Double.isNaN(rpm) || Double.isInfinite(rpm)) {
+        if (rpm > maxAllowedRpm || Double.isNaN(rpm) || Double.isInfinite(rpm)) {
             result.errorMessage = "alpha=" + formatDeg(alpha)
-                    + " 需要的 RPM 過高或數值異常 (rpm=" + String.format("%.1f", rpm) + ")"
+                    + " 需要的 RPM 過高或數值異常 (rpm=" + String.format("%.1f", rpm) + ", 上限=" + String.format("%.0f", maxAllowedRpm) + ")"
+                    + "，已視為不可行角度";
+            return result;
+        }
+
+        // RPM 下限檢查：由 setRpmRange() 設定，預設 0（不限制）。
+        // 例如避免球速太低造成彈道太平、打不到目標高度。
+        if (rpm < minAllowedRpm) {
+            result.errorMessage = "alpha=" + formatDeg(alpha)
+                    + " 需要的 RPM 過低 (rpm=" + String.format("%.1f", rpm) + ", 下限=" + String.format("%.0f", minAllowedRpm) + ")"
                     + "，已視為不可行角度";
             return result;
         }

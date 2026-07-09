@@ -19,10 +19,12 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 public class Control_Mode {
     abstract static class BaseTeleOp extends OpMode {
         protected abstract boolean getIsBlue();
+        protected abstract boolean getIsFar();
+        private boolean isFar = getIsFar();
         private static Follower follower;
 
         private Hardware hardware   = new Hardware();
-        private ShooterCalculator shooterCalculator = new ShooterCalculator(follower);
+        private ShooterCalculator shooterCalculator;
         private ServoAngleCalculation servoAngleCalculation;
         private TurretController turretController;
         private boolean isShooting = false;
@@ -39,20 +41,34 @@ public class Control_Mode {
             servoAngleCalculation = new ServoAngleCalculation();
             hardware.init(hardwareMap);
             follower = Constants.createFollower(hardwareMap);
-            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56);
             if(Auto_Mode.robotPose != null && Auto_Mode.turretAngle != null) {
                 follower.setStartingPose(Auto_Mode.robotPose);
+                Configurable_Constant.turretAngleOffset = getIsBlue() ? 180: 0;
             }else {
-                follower.setStartingPose(new Pose(getIsBlue() ? (144-96) : 96, 72, Math.toRadians(90)));
+                Pose closeStartingPose = new Pose(
+                        (getIsBlue()? 144 -109.77 : 109.77),
+                        132.85
+                        ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
+                );
+                Pose farStartingPose = new Pose(
+                        (getIsBlue()? 144 - 96.7  : 96.7),
+                        10.8
+                        ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
+                );
+                Configurable_Constant.turretAngleOffset = getIsBlue() ? 180: 0;
+                follower.setPose(getIsFar() ? farStartingPose : closeStartingPose);
                 hardware.rev9AxisImu.resetYaw();
             }
             follower.update();
+            shooterCalculator = new ShooterCalculator(follower);
 
             shooterCalculator.setGoal(getIsBlue() ? 2:142, 142, 44);
+            shooterCalculator.setRpmRange(getIsFar() ? 3300 : 2700 , getIsFar() ? 3600:3000);
             turretController = new TurretController(hardware, follower);
-            turretController.setAimPoint(  getIsBlue() ? 4:140,140);
+            turretController.setAimPoint(getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
             turretController.setAimMode(TurretController.AimMode.IMU_PID);
+            isFar = getIsFar();
         }
 
         @Override
@@ -71,34 +87,49 @@ public class Control_Mode {
 
         @Override
         public void loop() {
-            shooterCalculator.setPreferredAngle(farZone(follower.getPose()) ? 54 : 56); // 這裡才是真正要調的 砲台角度 如果沒問題的話
-                                                                                        // 阿這個數值的意思是砲台的射球角度 數字越高射越直 數字越小拋越高
-            turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
+            if(gamepad1.rightBumperWasPressed()){
+                isFar = true;
+            } else if (gamepad1.leftBumperWasPressed()) {
+                isFar = false;
+            }
+            shooterCalculator.setRpmRange(isFar ? 3300 : 2700 , isFar ? 3600:2900);
+            turretController.setTxTarget( (isFar ? -3 : 0) * (getIsBlue() ? -1 : 1));
+            shooterCalculator.setPreferredAngle(isFar ? (90 - Tuning_Constant.number1) : (90-35));
+            ShooterCalculator.setLaunchEfficiency( isFar ?Tuning_Constant.number2/*0.42*/ : 0.435);
             ShooterCalculator.ShootResult shooterResult = shooterCalculator.update();
 
-            follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1),
-                    -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1),
-                    -gamepad1.right_stick_x,false);
+            // 按住 X：停下來重新定位。搖桿輸入歸零、讓機器人真正靜止，
+            // 品質過濾（角速度 / 平移速度）通過後才會採用視覺讀值並修正位置。
+            // 放開 X 才恢復正常搖桿駕駛。
+            boolean relocalizing = gamepad1.x;
+            if (relocalizing) {
+                follower.setTeleOpDrive(0, 0, 0, false);
+            } else {
+                follower.setTeleOpDrive(
+                        -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1),
+                        -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1),
+                        -gamepad1.right_stick_x, false);
+            }
 
             if(shooterResult.valid) {
-            hardware.shooter0.setVelocity(shooterResult.flywheelRPM/*Tuning_Constant.testing_Shooter_Target_RPM*/ / 60 * 28);
-            hardware.shooter1.setVelocity(shooterResult.flywheelRPM/*Tuning_Constant.testing_Shooter_Target_RPM*/ / 60 * 28);
-            hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(Math.toDegrees(shooterResult.launchAngle)));
-            turretController.setLastBaseSpeed(shooterResult.launchSpeed);
-            turretController.setLastBaseAngle(shooterResult.launchAngle);
+                turretController.setLastBaseSpeed(shooterResult.launchSpeed);
+                turretController.setLastBaseAngle(shooterResult.launchAngle);
+                hardware.shooter0.setVelocity(shooterResult.flywheelRPM /*Tuning_Constant.testing_Shooter_Target_RPM*/ / 60 * 28);
+                hardware.shooter1.setVelocity(shooterResult.flywheelRPM /*Tuning_Constant.testing_Shooter_Target_RPM */ / 60 * 28);
+                hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(90 - Math.toDegrees(shooterResult.launchAngle)/* Tuning_Constant.angleServo*/));
             }
-            double rpmError = shooterResult.flywheelRPM - hardware.shooter0.getVelocity() * 60 / 28;
+
+            double rpmError = shooterResult.flywheelRPM- hardware.shooter0.getVelocity() * 60 / 28;
 
             if (!gamepad1.b) {
                 isShooting = false;
             } else if (!isShooting) {
-                if (rpmError > -0 && rpmError < 100) {
+                if (rpmError > -50 && rpmError < 50) {
                     isShooting = true;
                 }
             }
-            if(gamepad1.x){
-                turretController.relocalizeWithLimelight();
+            if (relocalizing) {
+                turretController.relocalizeStationary();
             }
             if(gamepad1.yWasReleased()){
                 turretController.setAimMode(
@@ -106,6 +137,9 @@ public class Control_Mode {
                                 ? TurretController.AimMode.IMU_PID
                                 : TurretController.AimMode.APRIL_TAG
                 );
+            }
+            if(gamepad1.aWasPressed()){
+                follower.setPose( new Pose(Math.abs(12.7 - (getIsBlue() ? 0 : 144)),12.6,follower.getHeading()));
             }
             hardware.intake0.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Forward_Intake_Power);
             hardware.intake1.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Rear_Intake_Power);
@@ -122,22 +156,26 @@ public class Control_Mode {
                     ,Tuning_Constant.Shooter_I
                     ,Tuning_Constant.Shooter_D
                     ,Tuning_Constant.Shooter_F);
-            turretController.update();
+            turretController.update(relocalizing);
 
             telemetry.addData("是否有錯誤",shooterResult.valid ?"沒有":"有");
             telemetry.addData("射球計算機錯誤訊息",shooterResult.errorMessage);
             telemetry.addData("設定RPM", shooterResult.flywheelRPM);
-            telemetry.addData("設定角度", Math.toDegrees(shooterResult.launchAngle));
-            telemetry.addData("設定位置", servoAngleCalculation.DegreeToPos(Math.toDegrees(shooterResult.launchAngle)));
+            telemetry.addData("設定角度", 90-Math.toDegrees(shooterResult.launchAngle));
+            telemetry.addData("設定位置", servoAngleCalculation.DegreeToPos( 90 - Math.toDegrees(shooterResult.launchAngle)));
             telemetry.addData("砲台角度",  turretController.getCurrentAngleDeg());
             telemetry.addData("目標角度",  turretController.getTargetAngleDeg());
             telemetry.addData("Robot X", follower.getPose().getX());
             telemetry.addData("Robot Y", follower.getPose().getY());
             telemetry.addData("Robot Heading", Math.toDegrees(follower.getPose().getHeading()));
             telemetry.addData("旋轉砲台朝向", hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset);
-            telemetry.addData("Tx是否套用", turretController.isLastTxApplied());
-            telemetry.addData("Tx補償角度", turretController.getLastTxCorrectionDeg());
+            telemetry.addData("瞄準模式", turretController.getAimMode());
+            telemetry.addData("Tx原始誤差", turretController.getLastTxErrorDeg());
             telemetry.addData("射球誤差",Math.abs(shooterResult.flywheelRPM - hardware.shooter0.getVelocity() * 60/28));
+            telemetry.addData("停止重新定位中", relocalizing);
+            telemetry.addData("視覺定位狀態", turretController.getLimelightRejectReason());
+            telemetry.addData("砲台角速度(deg/s)", turretController.getTurretAngularVelocityDegPerSec());
+            telemetry.addData("底盤角速度(deg/s)", turretController.getChassisAngularVelocityDegPerSec());
             follower.update();
             drawOnlyCurrent();
             telemetry.update();
@@ -160,17 +198,51 @@ public class Control_Mode {
             return robotPose.getY() < 48;
         }
     }
-    @TeleOp(name = "紅方程式",group = "TeleOp")
-    public static class RedTeleOp extends BaseTeleOp{
+    @TeleOp(name = "紅方近程式",group = "RedTeleOp")
+    public static class RedCloseTeleOp extends BaseTeleOp{
         @Override
         protected boolean getIsBlue() {
             return false;
         }
+
+        @Override
+        protected boolean getIsFar() {
+            return false;
+        }
     }
-    @TeleOp(name = "藍方程式",group = "TeleOp")
-    public static class BlueTeleOp extends BaseTeleOp{
+    @TeleOp(name = "紅方遠程式",group = "RedTeleOp")
+    public static class RedFarTeleOp extends BaseTeleOp{
         @Override
         protected boolean getIsBlue() {
+            return false;
+        }
+
+        @Override
+        protected boolean getIsFar() {
+            return true;
+        }
+    }
+    @TeleOp(name = "藍方近程式",group = "BlueTeleOp")
+    public static class BlueCloseTeleOp extends BaseTeleOp{
+        @Override
+        protected boolean getIsBlue() {
+            return true;
+        }
+
+        @Override
+        protected boolean getIsFar() {
+            return false;
+        }
+    }
+    @TeleOp(name = "藍方遠程式",group = "BlueTeleOp")
+    public static class BlueFarTeleOp extends BaseTeleOp{
+        @Override
+        protected boolean getIsBlue() {
+            return true;
+        }
+
+        @Override
+        protected boolean getIsFar() {
             return true;
         }
     }
