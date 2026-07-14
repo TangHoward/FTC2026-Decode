@@ -5,7 +5,6 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Constant;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 
@@ -32,15 +31,15 @@ public class Shooter_PIDF_Tuning extends OpMode {
     @Override
     public void start() {
         hardware.shooter0.setVelocityPIDFCoefficients(
-                Tuning_Constant.Shooter_P
-                ,Tuning_Constant.Shooter_I
-                ,Tuning_Constant.Shooter_D
-                ,Tuning_Constant.Shooter_F);
+                Tuning_Constant.Shooter_P_Far
+                ,Tuning_Constant.Shooter_I_Far
+                ,Tuning_Constant.Shooter_D_Far
+                ,Tuning_Constant.Shooter_F_Far);
         hardware.shooter1.setVelocityPIDFCoefficients(
-                Tuning_Constant.Shooter_P
-                ,Tuning_Constant.Shooter_I
-                ,Tuning_Constant.Shooter_D
-                ,Tuning_Constant.Shooter_F);
+                Tuning_Constant.Shooter_P_Far
+                ,Tuning_Constant.Shooter_I_Far
+                ,Tuning_Constant.Shooter_D_Far
+                ,Tuning_Constant.Shooter_F_Far);
 
         hardware.intake0.setPower(1);
         hardware.intake1.setPower(-0.1);

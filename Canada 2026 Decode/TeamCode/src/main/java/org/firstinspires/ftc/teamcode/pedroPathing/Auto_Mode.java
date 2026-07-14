@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import static com.pedropathing.ivy.Scheduler.schedule;
+import static com.pedropathing.ivy.groups.Groups.parallel;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 import static com.pedropathing.ivy.commands.Commands.*;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
@@ -44,8 +45,8 @@ public class Auto_Mode {
         private PathChain goStraightScoringPose, goScoringPoseFromPushGate, intake1stPath, intake2ndPath, gotoGate , goBackGate, goEnd,pushGate;
         public void initPosePoint(){
             startingPose = new Pose(
-                    (getIsBlue()? 144 -109.77 : 109.77),
-                    132.85
+                    (getIsBlue()? 144 -107.9 : 107.9),
+                    132.7
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             scoringPose = new Pose(
@@ -69,24 +70,24 @@ public class Auto_Mode {
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             pushGateControl = new Pose(
-                    (getIsBlue()? 144 -118 :118) ,
-                    65
+                    (getIsBlue()? 144 -116 :116) ,
+                    62
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             gatePose = new Pose(
-                    (getIsBlue()? 144 -130.4:130.4),
-                    58.7
-                    ,Math.toRadians(Math.abs(34.5 - (getIsBlue() ? 180 : 0)))
+                    (getIsBlue()? 144 -127.9:127.9),
+                    58.4
+                    ,Math.toRadians(Math.abs(23 - (getIsBlue() ? 180 : 0)))
             );
             pushGatePose = new Pose(
-                    (getIsBlue()? 144 -123:123),
-                    70.7
+                    (getIsBlue()? 144 -122:122),
+                    62.77
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             gateControl = new Pose(
                     (getIsBlue()? 144 - 111.2:111.2),
-                    58.7
-                    ,Math.toRadians(Math.abs(34.5 - (getIsBlue() ? 180 : 0)))
+                    58.4
+                    ,Math.toRadians(Math.abs(23 - (getIsBlue() ? 180 : 0)))
             );
             endPose = new Pose(
                     (getIsBlue()? 144 - 110:110),
@@ -141,23 +142,23 @@ public class Auto_Mode {
         }
         public Command autoRoutine(){
             return sequential(
-                    instant(() -> setShooterRPM(2800)),
-                    instant(() -> setServoAngle(49)),
+                    instant(() -> setShooterRPM(2550)),
+                    instant(() -> setServoAngle(42)),
                     follow(follower, goStraightScoringPose, true),
                     shooting(),
-                    follow(follower, intake2ndPath, true),
-                    follow(follower, pushGate, true, 0.6),
+                    spit(follow(follower, intake2ndPath, true)),
+                    follow(follower, pushGate, true, 0.6).raceWith(waitMs(1500)),
                     follow(follower, goScoringPoseFromPushGate, true),
                     shooting(),
-                    follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000)),
+                    spit(follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000))),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
-                    follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000)),
+                    spit(follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000))),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
-                    follow(follower, intake1stPath, true),
+                    spit(follow(follower, intake1stPath, true)),
                     shooting(),
                     follow(follower, goEnd, true)
             );
@@ -179,18 +180,18 @@ public class Auto_Mode {
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
             turretController.setAimMode(TurretController.AimMode.IMU_PID);
             hardware.shooter0.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Close
+                    ,Tuning_Constant.Shooter_I_Close
+                    ,Tuning_Constant.Shooter_D_Close
+                    ,Tuning_Constant.Shooter_F_Close);
             hardware.shooter1.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Close
+                    ,Tuning_Constant.Shooter_I_Close
+                    ,Tuning_Constant.Shooter_D_Close
+                    ,Tuning_Constant.Shooter_F_Close);
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2800);
+            packet.put("targetRPM", 2550);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
 
@@ -206,13 +207,12 @@ public class Auto_Mode {
         public void loop() {
             follower.update();
             turretController.update();
-            turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
             Scheduler.execute();
             robotPose = follower.getPose();
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 3300);
+            packet.put("targetRPM", 2550);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
         public void setServoAngle(double angle){
@@ -251,6 +251,16 @@ public class Auto_Mode {
                     instant(() -> hardware.blocker.setPosition(0))
             );
         }
+        public Command spit(Command followPath){
+            return parallel(
+                    sequential(
+                    instant(() -> hardware.intake0.setPower(-1)),
+                    instant(() -> hardware.intake1.setPower(-1)),
+                    waitMs(300),
+                    instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
+                    instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
+                    ), followPath);
+        }
 
     }
     abstract static class BaseFarAuto extends OpMode{
@@ -266,7 +276,7 @@ public class Auto_Mode {
         public void initPosePoint(){
             startingPose = new Pose(
                     (getIsBlue()? 144 - 96.7  : 96.7),
-                    10.8
+                    9.3
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             scoringPose = new Pose(
@@ -295,14 +305,14 @@ public class Auto_Mode {
                     ,Math.toRadians(Math.abs(25.5 - (getIsBlue() ? 180 : 0)))
             );
             loadZonePose = new Pose(
-                    (getIsBlue()? 144 - 130:130),
-                    11
+                    (getIsBlue()? 144 - 132.5:132.5),
+                    10
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             loadZoneTwo = new Pose(
-                    (getIsBlue()? 144 - 128:128),
-                    34
-                    ,Math.toRadians(Math.abs(30 - (getIsBlue() ? 180 : 0)))
+                    (getIsBlue()? 144 - 130.9:130.9),
+                    25.1
+                    ,Math.toRadians(Math.abs(31.1 - (getIsBlue() ? 180 : 0)))
             );
         }
         public void buildPath(){
@@ -351,33 +361,33 @@ public class Auto_Mode {
         }
         public Command autoRoutine(){
             return sequential(
-                    instant(() -> setShooterRPM(3500)),
+                    instant(() -> setShooterRPM(3450)),
                     instant(() -> setServoAngle(57)),
                     follow(follower, goStraightScoringPose, true)
                     ,waitMs(800)
                     ,shooting()
-                    ,follow(follower, intake3rdPath,true)
+                    ,spit(follow(follower, intake3rdPath,true))
                     ,shooting()
-                    ,follow(follower, goStraightLoadZone,true).raceWith(waitMs(3000))
+                    ,spit(follow(follower, goStraightLoadZone,true).raceWith(waitMs(3000)))
                     ,waitMs(200)
                     ,shaking()
                     ,follow(follower,goStraightScoringPose,true)
                     ,shooting()
-                    ,follow(follower, goGoStraightLoadZoneTwo,true).raceWith(waitMs(3000))
+                    ,spit(follow(follower, goGoStraightLoadZoneTwo,true).raceWith(waitMs(3000)))
                     ,waitMs(200)
                     ,follow(follower,goStraightScoringPose,true)
                     ,shooting()
-                    ,follow(follower, goStraightLoadZone,true).raceWith(waitMs(2000))
+                    ,spit(follow(follower, goStraightLoadZone,true).raceWith(waitMs(2000)))
                     ,waitMs(200)
                     ,shaking()
                     ,follow(follower,goStraightScoringPose,true)
                     ,shooting()
-                    ,follow(follower, goGoStraightLoadZoneTwo,true).raceWith(waitMs(2000))
+                    ,spit(follow(follower, goGoStraightLoadZoneTwo,true).raceWith(waitMs(2000)))
                     ,waitMs(200)
                     ,follow(follower,goStraightScoringPose,true)
                     ,waitMs(700)
                     ,shooting()
-                    ,follow(follower, goStraightLoadZone,true).raceWith(waitMs(2000))
+                    ,spit(follow(follower, goStraightLoadZone,true).raceWith(waitMs(2000)))
             );
         }
 
@@ -397,20 +407,20 @@ public class Auto_Mode {
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
             //turretController.setAimMode(TurretController.AimMode.IMU_PID);
             turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
-            turretController.setTxTarget(-3 * (getIsBlue() ? -1 : 1));
+            turretController.setTxTarget(-2.5 * (getIsBlue() ? -1 : 1));
             hardware.shooter0.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Far
+                    ,Tuning_Constant.Shooter_I_Far
+                    ,Tuning_Constant.Shooter_D_Far
+                    ,Tuning_Constant.Shooter_F_Far);
             hardware.shooter1.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Far
+                    ,Tuning_Constant.Shooter_I_Far
+                    ,Tuning_Constant.Shooter_D_Far
+                    ,Tuning_Constant.Shooter_F_Far);
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 3300);
+            packet.put("targetRPM", 3450);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
 
@@ -431,7 +441,7 @@ public class Auto_Mode {
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 3500);
+            packet.put("targetRPM", 3450);
             telemetry.addData("Tx誤差",turretController.getLastTxErrorDeg());
             telemetry.addData("Tx是否套用", turretController.isLastTxApplied());
             telemetry.update();
@@ -482,6 +492,16 @@ public class Auto_Mode {
 
             );
         }
+        public Command spit(Command followPath){
+            return parallel(
+                    sequential(
+                            instant(() -> hardware.intake0.setPower(-1)),
+                            instant(() -> hardware.intake1.setPower(-1)),
+                            waitMs(300),
+                            instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
+                            instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
+                    ), followPath);
+        }
 
     }
     abstract static class BaseAllAuto extends OpMode{
@@ -495,8 +515,8 @@ public class Auto_Mode {
         private PathChain goStraightScoringPose, goScoringPoseFromPushGate, intake1stPath, intake2ndPath,intake3rdPath, gotoGate,gotoGateTwo , goBackGate, goEnd,pushGate;
         public void initPosePoint(){
             startingPose = new Pose(
-                    (getIsBlue()? 144 -109.77 : 109.77),
-                    132.85
+                    (getIsBlue()? 144 -107.9 : 107.9),
+                    132.7
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             scoringPose = new Pose(
@@ -526,28 +546,28 @@ public class Auto_Mode {
             );
             intake3rdControl = new Pose(
                     (getIsBlue()? 144 -97 :97) ,
-                    35
+                    33
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             pushGateControl = new Pose(
-                    (getIsBlue()? 144 -118 :118) ,
-                    65
+                    (getIsBlue()? 144 -116 :116)
+                    ,62
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             gatePose = new Pose(
-                    (getIsBlue()? 144 -130.4:130.4),
-                    58.7
-                    ,Math.toRadians(Math.abs(34.5 - (getIsBlue() ? 180 : 0)))
+                    (getIsBlue()? 144 -127.9:127.9),
+                    58.4
+                    ,Math.toRadians(Math.abs(23 - (getIsBlue() ? 180 : 0)))
             );
             pushGatePose = new Pose(
-                    (getIsBlue()? 144 -123:123),
-                    70.7
+                    (getIsBlue()? 144 -122:122),
+                    62.77
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             gateControl = new Pose(
                     (getIsBlue()? 144 - 111.2:111.2),
-                    58.7
-                    ,Math.toRadians(Math.abs(34.5 - (getIsBlue() ? 180 : 0)))
+                    58.4
+                    ,Math.toRadians(Math.abs(23 - (getIsBlue() ? 180 : 0)))
             );
             endPose = new Pose(
                     (getIsBlue()? 144 - 110:110),
@@ -612,22 +632,22 @@ public class Auto_Mode {
         }
         public Command autoRoutine(){
             return sequential(
-                    instant(() -> setShooterRPM(2800)),
-                    instant(() -> setServoAngle(49)),
+                    instant(() -> setShooterRPM(2550)),
+                    instant(() -> setServoAngle(42)),
                     follow(follower, goStraightScoringPose,true),
                     shooting(),
-                    follow(follower, intake2ndPath,true),
-                    follow(follower, pushGate,true),
+                    spit(follow(follower, intake2ndPath,true)),
+                    follow(follower, pushGate,true).raceWith(waitMs(1500)),
                     follow(follower, goScoringPoseFromPushGate,true),
                     shooting(),
-                    follow(follower, gotoGate, true),
+                    spit(follow(follower, gotoGate, true)),
                     follow(follower, gotoGateTwo, true , 0.6).raceWith(waitMs(3000)),
                     waitMs(2000),
                     follow(follower, goBackGate,true),
                     shooting(),
-                    follow(follower, intake1stPath,true),
+                    spit(follow(follower, intake1stPath,true)),
                     shooting(),
-                    follow(follower, intake3rdPath,true),
+                    spit(follow(follower, intake3rdPath,true)),
                     shooting(),
                     follow(follower,goEnd,true)
             );
@@ -649,18 +669,18 @@ public class Auto_Mode {
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
             turretController.setAimMode(TurretController.AimMode.IMU_PID);
             hardware.shooter0.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Close
+                    ,Tuning_Constant.Shooter_I_Close
+                    ,Tuning_Constant.Shooter_D_Close
+                    ,Tuning_Constant.Shooter_F_Close);
             hardware.shooter1.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,0
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+                    Tuning_Constant.Shooter_P_Close
+                    ,Tuning_Constant.Shooter_I_Close
+                    ,Tuning_Constant.Shooter_D_Close
+                    ,Tuning_Constant.Shooter_F_Close);
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2800);
+            packet.put("targetRPM", 2550);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
 
@@ -682,7 +702,7 @@ public class Auto_Mode {
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 3300);
+            packet.put("targetRPM", 2550);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
         public void setServoAngle(double angle){
@@ -720,6 +740,16 @@ public class Auto_Mode {
                     instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power)),
                     instant(() -> hardware.blocker.setPosition(0))
             );
+        }
+        public Command spit(Command followPath){
+            return parallel(
+                    sequential(
+                            instant(() -> hardware.intake0.setPower(-1)),
+                            instant(() -> hardware.intake1.setPower(-1)),
+                            waitMs(300),
+                            instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
+                            instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
+                    ), followPath);
         }
 
     }

@@ -6,5 +6,4 @@ import com.bylazar.configurables.annotations.Configurable;
 public class Configurable_Constant {
     public static double turretAngleOffset = 0;
 
-
 }

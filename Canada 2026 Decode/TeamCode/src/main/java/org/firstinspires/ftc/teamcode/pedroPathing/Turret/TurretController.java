@@ -66,6 +66,17 @@ public class TurretController {
     private double txLastErrorDeg = 0.0;
     private long   txLastTimeNs = 0L;
 
+    /** dt 上限（秒），避免 loop 卡頓或 tag 短暫消失造成微分/積分項暴衝。 */
+    private static final double MAX_DT_SEC = 0.1;
+
+    /**
+     * 死區遲滯狀態：true 代表目前正處於「凍結 I」的死區內。
+     * 用兩個不同門檻（進入用 Turret_Tx_Deadband_Deg，離開用
+     * Turret_Tx_Deadband_Exit_Deg，且離開門檻應大於進入門檻）
+     * 避免誤差剛好卡在邊界時因雜訊反覆進出、造成 I 忽凍結忽解凍。
+     */
+    private boolean txInDeadband = false;
+
     public TurretController(Hardware hardware, Follower follower) {
         this.hardware = hardware;
         this.follower = follower;
@@ -85,6 +96,7 @@ public class TurretController {
         txIntegralDeg   = 0.0;
         txLastErrorDeg  = 0.0;
         txLastTimeNs    = 0L;
+        txInDeadband    = false;
     }
 
     public AimMode getAimMode() {
@@ -101,6 +113,7 @@ public class TurretController {
         txIntegralDeg  = 0.0;
         txLastErrorDeg = 0.0;
         txLastTimeNs   = 0L;
+        txInDeadband   = false;
     }
 
     /**
@@ -122,6 +135,7 @@ public class TurretController {
             txIntegralDeg   = 0.0;
             txLastErrorDeg  = 0.0;
             txLastTimeNs    = 0L;
+            txInDeadband    = false;
         }
         aimPointX = fieldX;
         aimPointY = fieldY;
@@ -251,6 +265,11 @@ public class TurretController {
         double velY = follower.getVelocity().getYComponent();
         double velMag = Math.sqrt(velX * velX + velY * velY);
 
+        // follower.getVelocity() 是 field-centric 的「平移」速度分量，
+        // 不包含原地旋轉的角速度，所以拿它當作「底盤是否在平移」的判斷
+        // 完全符合「原地轉頭瞄準時仍允許積分累加」的需求。
+        boolean isTranslating = velMag > Tuning_Constant.Turret_Tx_I_Freeze_Speed_InPerSec;
+
         double turretOffsetDeg = 0.0;
         if (velMag > 0.5 && lastBaseSpeed > 0.0) {
             double thetaVel = Math.atan2(velY, velX);
@@ -275,29 +294,59 @@ public class TurretController {
                 double txError = tx.txDeg - txTargetDeg;
                 lastTxErrorDeg = txError;
 
-                long nowNs = System.nanoTime();
-                double dt = (txLastTimeNs == 0L) ? 0.0 : (nowNs - txLastTimeNs) / 1e9;
-                txLastTimeNs = nowNs;
+                // 遲滯判斷：目前在死區內，要「明顯超出」離開門檻才算離開；
+                // 目前在死區外，要「低於」進入門檻才算進入。避免誤差卡在
+                // 邊界附近時因雜訊反覆進出，造成 I 忽凍結忽解凍。
+                if (txInDeadband) {
+                    if (Math.abs(txError) > Tuning_Constant.Turret_Tx_Deadband_Exit_Deg) {
+                        txInDeadband = false;
+                    }
+                } else {
+                    if (Math.abs(txError) < Tuning_Constant.Turret_Tx_Deadband_Deg) {
+                        txInDeadband = true;
+                    }
+                }
 
-                txIntegralDeg += txError * dt;
-                txIntegralDeg = clamp(txIntegralDeg,
-                        -Tuning_Constant.Turret_Tx_I_MAX, Tuning_Constant.Turret_Tx_I_MAX);
+                if (txInDeadband) {
+                    txLastErrorDeg = txError;
+                    txLastTimeNs = 0L;
+                    currentAngleDeg = normalizeAngle(currentAngleDeg + lastTxCorrectionDeg);
+                    lastTxApplied = true;
+                } else {
+                    long nowNs = System.nanoTime();
+                    double dt = (txLastTimeNs == 0L) ? 0.0 : (nowNs - txLastTimeNs) / 1e9;
+                    dt = clamp(dt, 0.0, MAX_DT_SEC);
+                    txLastTimeNs = nowNs;
 
-                double derivativeDegPerSec = (dt > 1e-6) ? (txError - txLastErrorDeg) / dt : 0.0;
-                txLastErrorDeg = txError;
+                    double derivativeDegPerSec = (dt > 1e-6) ? (txError - txLastErrorDeg) / dt : 0.0;
+                    txLastErrorDeg = txError;
 
-                double pidOutputDeg =
-                        txError               * Tuning_Constant.Turret_Tx_P
-                                + txIntegralDeg       * Tuning_Constant.Turret_Tx_I
-                                + derivativeDegPerSec * Tuning_Constant.Turret_Tx_D;
+                    // 先算出「未限幅」的 PID 輸出，用來判斷是否飽和（anti-windup 用）
+                    double pidOutputDegRaw =
+                            txError               * Tuning_Constant.Turret_Tx_P
+                                    + txIntegralDeg       * Tuning_Constant.Turret_Tx_I
+                                    + derivativeDegPerSec * Tuning_Constant.Turret_Tx_D;
 
-                // 限幅，避免大誤差時單幀修正量暴衝
-                pidOutputDeg = clamp(pidOutputDeg,
-                        -Tuning_Constant.Turret_Tx_MAX_CORR, Tuning_Constant.Turret_Tx_MAX_CORR);
+                    double pidOutputDeg = clamp(pidOutputDegRaw,
+                            -Tuning_Constant.Turret_Tx_MAX_CORR, Tuning_Constant.Turret_Tx_MAX_CORR);
 
-                currentAngleDeg = normalizeAngle(currentAngleDeg - pidOutputDeg);
-                lastTxCorrectionDeg = -pidOutputDeg;
-                lastTxApplied = true;
+                    boolean saturated = (pidOutputDegRaw != pidOutputDeg);
+                    boolean errorPushesAwayFromSaturation =
+                            (pidOutputDeg > 0 && txError < 0) || (pidOutputDeg < 0 && txError > 0);
+
+                    // Conditional integration + anti-windup：
+                    // 只有在「底盤沒有平移」且「輸出沒有被夾住，或誤差正把輸出往回拉」時
+                    // 才允許積分累加，避免移動中的暫態誤差 / 飽和後的無效累積把 I 灌爆。
+                    if (!isTranslating && (!saturated || errorPushesAwayFromSaturation)) {
+                        txIntegralDeg += txError * dt;
+                        txIntegralDeg = clamp(txIntegralDeg,
+                                -Tuning_Constant.Turret_Tx_I_MAX, Tuning_Constant.Turret_Tx_I_MAX);
+                    }
+
+                    currentAngleDeg = normalizeAngle(currentAngleDeg - pidOutputDeg);
+                    lastTxCorrectionDeg = -pidOutputDeg;
+                    lastTxApplied = true;
+                }
             } else {
                 // tag 短暫看不到時，只重置 dt 計時避免下次 dt 突然暴增造成微分項暴衝，
                 // 但保留 txIntegralDeg，避免每次 tag 閃爍就把累積的修正歸零。
@@ -318,6 +367,7 @@ public class TurretController {
 
             long nowNs = System.nanoTime();
             double dt = (imuLastTimeNs == 0L) ? 0.0 : (nowNs - imuLastTimeNs) / 1e9;
+            dt = clamp(dt, 0.0, MAX_DT_SEC);
             imuLastTimeNs = nowNs;
 
             imuIntegralDeg += errorDeg * dt;

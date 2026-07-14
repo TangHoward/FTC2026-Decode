@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.Testing;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.bylazar.gamepad.Gamepad;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.pedroPathing._5TurnServo._5TurnServoRegulate;
-import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Constant;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 
@@ -37,15 +35,15 @@ public class Intake_Shooter_PIDF_Tuning extends OpMode {
     @Override
     public void loop() {
         hardware.shooter0.setVelocityPIDFCoefficients(
-                Tuning_Constant.Shooter_P
-                ,Tuning_Constant.Shooter_I
-                ,Tuning_Constant.Shooter_D
-                ,Tuning_Constant.Shooter_F);
+                Tuning_Constant.Shooter_P_Far
+                ,Tuning_Constant.Shooter_I_Far
+                ,Tuning_Constant.Shooter_D_Far
+                ,Tuning_Constant.Shooter_F_Far);
         hardware.shooter1.setVelocityPIDFCoefficients(
-                Tuning_Constant.Shooter_P
-                ,Tuning_Constant.Shooter_I
-                ,Tuning_Constant.Shooter_D
-                ,Tuning_Constant.Shooter_F);
+                Tuning_Constant.Shooter_P_Far
+                ,Tuning_Constant.Shooter_I_Far
+                ,Tuning_Constant.Shooter_D_Far
+                ,Tuning_Constant.Shooter_F_Far);
 
         //hardware.shooter0.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
         //hardware.shooter1.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);

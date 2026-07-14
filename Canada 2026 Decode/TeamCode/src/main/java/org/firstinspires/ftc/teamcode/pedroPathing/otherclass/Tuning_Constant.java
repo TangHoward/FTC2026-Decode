@@ -4,7 +4,9 @@ import com.bylazar.configurables.annotations.Configurable;
 
 @Configurable
 public class Tuning_Constant {
-    public static double Shooter_P = 25, Shooter_I = 1, Shooter_D = 0, Shooter_F = 11.7;
+    public static double Shooter_P_Far = 20, Shooter_I_Far = 0.025, Shooter_D_Far = 0, Shooter_F_Far = 11.5;
+    public static double Shooter_P_Close = 30, Shooter_I_Close = 0.015, Shooter_D_Close = 0, Shooter_F_Close = 12.05;
+
     public static double testing_Shooter_Target_RPM = 2550,testing_Forward_Intake_Power =1, testing_Rear_Intake_Power = 0.4;
     public static double servo = 0,angleServo = 0.05;
     public static double lunch_EFFICIENCY = 0.42;
@@ -14,10 +16,13 @@ public class Tuning_Constant {
     public static double Turret_IMU_I = 0.0;
     public static double Turret_IMU_D = 0.01;
     public static double Turret_IMU_I_MAX = 5.0;
-    public static double Turret_Tx_I = 1;
+    public static double Turret_Tx_I = 0.4;
     public static double Turret_Tx_D = 0.0;
-    public static double Turret_Tx_I_MAX = 20;
+    public static double Turret_Tx_I_MAX = 10;
+    public static double Turret_Tx_Deadband_Deg = 0.5;
+    public static double Turret_Tx_Deadband_Exit_Deg = Turret_Tx_Deadband_Deg * 1.75;
     public static double Turret_Tx_MAX_CORR = 15.0;
+    public static double Turret_Tx_I_Freeze_Speed_InPerSec = 1.5;
 
     // ── Limelight 視覺定位：動態品質過濾 ─────────────────────
     /** 平均 tag 距離超過這個值（inches）就直接拒絕本次視覺讀值 */
@@ -41,4 +46,5 @@ public class Tuning_Constant {
     /** 融合時視覺權重的上限（0~1），避免單一低品質讀值就大幅覆蓋 Pedro 估計 */
     public static double Vision_Max_Fuse_Weight = 0.6;
     public static double number1 = 72,number2 = 0.42;
+    public static double x_localizeTest_startPose = 72,y_localizeTest_startPose = 72, r_localizeTest_startPose = 90;
 }

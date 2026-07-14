@@ -5,6 +5,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Shooter.ServoAngleCalculation;
@@ -35,6 +36,7 @@ public class Control_Mode {
                 855, 900.00,945, 990.00,1035, 1080.00,1125, 1170.00,1215, 1260.00,1305, 1350.00,1395, 1440.00,1485, 1530.00,1575, 1620.00,
                 1665,1710.00,1755, 1800.00
         };
+
         private _5TurnServoRegulate turretRegulate = new _5TurnServoRegulate(tableX,tableY);
         @Override
         public void init() {
@@ -63,11 +65,10 @@ public class Control_Mode {
             shooterCalculator = new ShooterCalculator(follower);
 
             shooterCalculator.setGoal(getIsBlue() ? 2:142, 142, 44);
-            shooterCalculator.setRpmRange(getIsFar() ? 3300 : 2700 , getIsFar() ? 3600:3000);
             turretController = new TurretController(hardware, follower);
             turretController.setAimPoint(getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             isFar = getIsFar();
         }
 
@@ -88,14 +89,12 @@ public class Control_Mode {
         @Override
         public void loop() {
             if(gamepad1.rightBumperWasPressed()){
-                isFar = true;
+                isFar = !getIsBlue();
             } else if (gamepad1.leftBumperWasPressed()) {
-                isFar = false;
+                isFar = getIsBlue();
             }
-            shooterCalculator.setRpmRange(isFar ? 3300 : 2700 , isFar ? 3600:2900);
-            turretController.setTxTarget( (isFar ? -3 : 0) * (getIsBlue() ? -1 : 1));
-            shooterCalculator.setPreferredAngle(isFar ? (90 - Tuning_Constant.number1) : (90-35));
-            ShooterCalculator.setLaunchEfficiency( isFar ?Tuning_Constant.number2/*0.42*/ : 0.435);
+            shooterCalculator.setFarMode(isFar);
+            turretController.setTxTarget( (isFar ? -1.5 : 0) * (getIsBlue() ? -1 : 1));
             ShooterCalculator.ShootResult shooterResult = shooterCalculator.update();
 
             // 按住 X：停下來重新定位。搖桿輸入歸零、讓機器人真正靜止，
@@ -106,17 +105,21 @@ public class Control_Mode {
                 follower.setTeleOpDrive(0, 0, 0, false);
             } else {
                 follower.setTeleOpDrive(
-                        -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1),
-                        -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1),
-                        -gamepad1.right_stick_x, false);
+                        -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1)*0.8,
+                        -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1)*0.8,
+                        -gamepad1.right_stick_x*0.6, false);
             }
 
             if(shooterResult.valid) {
                 turretController.setLastBaseSpeed(shooterResult.launchSpeed);
-                turretController.setLastBaseAngle(shooterResult.launchAngle);
-                hardware.shooter0.setVelocity(shooterResult.flywheelRPM /*Tuning_Constant.testing_Shooter_Target_RPM*/ / 60 * 28);
-                hardware.shooter1.setVelocity(shooterResult.flywheelRPM /*Tuning_Constant.testing_Shooter_Target_RPM */ / 60 * 28);
-                hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(90 - Math.toDegrees(shooterResult.launchAngle)/* Tuning_Constant.angleServo*/));
+                turretController.setLastBaseAngle(shooterResult.launchAngleRad);
+                if(!gamepad1.right_trigger_pressed) {
+                    hardware.shooter0.setVelocity(shooterResult.flywheelRPM / 60 * 28);
+                    hardware.shooter1.setVelocity(shooterResult.flywheelRPM / 60 * 28);
+                }else if (!isShooting){
+                    hardware.shooter0.setPower(-0);
+                    hardware.shooter1.setPower(-0);}
+                hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(shooterResult.servoAngleDeg));
             }
 
             double rpmError = shooterResult.flywheelRPM- hardware.shooter0.getVelocity() * 60 / 28;
@@ -124,7 +127,7 @@ public class Control_Mode {
             if (!gamepad1.b) {
                 isShooting = false;
             } else if (!isShooting) {
-                if (rpmError > -50 && rpmError < 50) {
+                if (rpmError > -50 && rpmError < 100) {
                     isShooting = true;
                 }
             }
@@ -141,28 +144,43 @@ public class Control_Mode {
             if(gamepad1.aWasPressed()){
                 follower.setPose( new Pose(Math.abs(12.7 - (getIsBlue() ? 0 : 144)),12.6,follower.getHeading()));
             }
-            hardware.intake0.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Forward_Intake_Power);
-            hardware.intake1.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Rear_Intake_Power);
+            hardware.intake0.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Forward_Intake_Power
+                            * (gamepad1.dpad_down ? -1 : 1));
+            hardware.intake1.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Rear_Intake_Power
+                            * (gamepad1.dpad_down ? -1 : 1));
             //hardware.turretController.setPosition(turretRegulate.regulate(0.5));
             hardware.blocker.setPosition(isShooting ? 0.22 : 0);
 
-            hardware.shooter0.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,Tuning_Constant.Shooter_I
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
-            hardware.shooter1.setVelocityPIDFCoefficients(
-                    Tuning_Constant.Shooter_P
-                    ,Tuning_Constant.Shooter_I
-                    ,Tuning_Constant.Shooter_D
-                    ,Tuning_Constant.Shooter_F);
+            if(isFar) {
+                hardware.shooter0.setVelocityPIDFCoefficients(
+                        Tuning_Constant.Shooter_P_Far
+                        , Tuning_Constant.Shooter_I_Far
+                        , Tuning_Constant.Shooter_D_Far
+                        , Tuning_Constant.Shooter_F_Far);
+                hardware.shooter1.setVelocityPIDFCoefficients(
+                        Tuning_Constant.Shooter_P_Far
+                        , Tuning_Constant.Shooter_I_Far
+                        , Tuning_Constant.Shooter_D_Far
+                        , Tuning_Constant.Shooter_F_Far);
+            }else {
+                hardware.shooter0.setVelocityPIDFCoefficients(
+                        Tuning_Constant.Shooter_P_Close
+                        ,Tuning_Constant.Shooter_I_Close
+                        ,Tuning_Constant.Shooter_D_Close
+                        ,Tuning_Constant.Shooter_F_Close);
+                hardware.shooter1.setVelocityPIDFCoefficients(
+                        Tuning_Constant.Shooter_P_Close
+                        ,Tuning_Constant.Shooter_I_Close
+                        ,Tuning_Constant.Shooter_D_Close
+                        ,Tuning_Constant.Shooter_F_Close);
+            }
             turretController.update(relocalizing);
 
             telemetry.addData("是否有錯誤",shooterResult.valid ?"沒有":"有");
             telemetry.addData("射球計算機錯誤訊息",shooterResult.errorMessage);
             telemetry.addData("設定RPM", shooterResult.flywheelRPM);
-            telemetry.addData("設定角度", 90-Math.toDegrees(shooterResult.launchAngle));
-            telemetry.addData("設定位置", servoAngleCalculation.DegreeToPos( 90 - Math.toDegrees(shooterResult.launchAngle)));
+            telemetry.addData("設定角度", shooterResult.servoAngleDeg);
+            telemetry.addData("設定位置", servoAngleCalculation.DegreeToPos(shooterResult.servoAngleDeg));
             telemetry.addData("砲台角度",  turretController.getCurrentAngleDeg());
             telemetry.addData("目標角度",  turretController.getTargetAngleDeg());
             telemetry.addData("Robot X", follower.getPose().getX());
@@ -197,6 +215,7 @@ public class Control_Mode {
         public static boolean farZone(Pose robotPose){
             return robotPose.getY() < 48;
         }
+
     }
     @TeleOp(name = "紅方近程式",group = "RedTeleOp")
     public static class RedCloseTeleOp extends BaseTeleOp{

@@ -20,7 +20,7 @@ public class
 Constants {
     // 機器數值調整 請見 http://youtube.com/watch?v=vihb2LPtSK0&t
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(18)
+            .mass(23)
             .forwardZeroPowerAcceleration(-33.8028238641209)
             .lateralZeroPowerAcceleration(-78.01025375605516)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.1,0,0.009,0.02))
