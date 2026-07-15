@@ -42,7 +42,7 @@ public class Auto_Mode {
         private TurretController turretController;
         private Pose startingPose,scoringPose,intake1st,intake2nd,gatePose,pushGatePose,
                 intake1stControl,intake2ndControl,gateControl,pushGateControl,endPose;
-        private PathChain goStraightScoringPose, goScoringPoseFromPushGate, intake1stPath, intake2ndPath, gotoGate , goBackGate, goEnd,pushGate;
+        private PathChain goStraightScoringPose, goScoringPoseFromPushGate, intake1stPath, intake2ndPath, gotoGate, gotoGateTwo, goBackGate, goEnd,pushGate;
         public void initPosePoint(){
             startingPose = new Pose(
                     (getIsBlue()? 144 -107.9 : 107.9),
@@ -126,8 +126,10 @@ public class Auto_Mode {
             gotoGate = follower.pathBuilder()
                     .addPath(new BezierLine(follower::getPose, gateControl))
                     .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, gateControl.getHeading(), 1))
-                    .addPath(new BezierLine(gateControl,gatePose))
-                    .setLinearHeadingInterpolation(gateControl.getHeading(),gatePose.getHeading(),0)
+                    .build();
+            gotoGateTwo = follower.pathBuilder()
+                    .addPath(new BezierLine(follower::getPose, gatePose))
+                    .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, gatePose.getHeading(),0.6))
                     .build();
             goBackGate = follower.pathBuilder()
                     .addPath(new BezierLine(follower::getPose, gateControl))
@@ -150,11 +152,13 @@ public class Auto_Mode {
                     follow(follower, pushGate, true, 0.6).raceWith(waitMs(1500)),
                     follow(follower, goScoringPoseFromPushGate, true),
                     shooting(),
-                    spit(follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000))),
+                    spit(follow(follower, gotoGate, true)),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(3000)),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
-                    spit(follow(follower, gotoGate, true,0.6).raceWith(waitMs(3000))),
+                    spit(follow(follower, gotoGate, true)),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(3000)),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
@@ -254,11 +258,11 @@ public class Auto_Mode {
         public Command spit(Command followPath){
             return parallel(
                     sequential(
-                    instant(() -> hardware.intake0.setPower(-1)),
-                    instant(() -> hardware.intake1.setPower(-1)),
-                    waitMs(300),
-                    instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
-                    instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
+                            instant(() -> hardware.intake0.setPower(-1)),
+                            instant(() -> hardware.intake1.setPower(-1)),
+                            waitMs(300),
+                            instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
+                            instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
                     ), followPath);
         }
 

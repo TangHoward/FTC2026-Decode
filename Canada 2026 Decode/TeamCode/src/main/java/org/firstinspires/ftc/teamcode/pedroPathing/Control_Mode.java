@@ -48,13 +48,13 @@ public class Control_Mode {
                 Configurable_Constant.turretAngleOffset = getIsBlue() ? 180: 0;
             }else {
                 Pose closeStartingPose = new Pose(
-                        (getIsBlue()? 144 -109.77 : 109.77),
-                        132.85
+                        (getIsBlue()? 144 -107.9 : 107.9),
+                        132.7
                         ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
                 );
                 Pose farStartingPose = new Pose(
                         (getIsBlue()? 144 - 96.7  : 96.7),
-                        10.8
+                        9.3
                         ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
                 );
                 Configurable_Constant.turretAngleOffset = getIsBlue() ? 180: 0;
@@ -68,7 +68,7 @@ public class Control_Mode {
             turretController = new TurretController(hardware, follower);
             turretController.setAimPoint(getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
+//            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             isFar = getIsFar();
         }
 
@@ -127,7 +127,7 @@ public class Control_Mode {
             if (!gamepad1.b) {
                 isShooting = false;
             } else if (!isShooting) {
-                if (rpmError > -50 && rpmError < 100) {
+                if (rpmError > -50 && rpmError < 100 && Math.abs(turretController.getLastTxErrorDeg()) < 1) {
                     isShooting = true;
                 }
             }
@@ -141,12 +141,9 @@ public class Control_Mode {
                                 : TurretController.AimMode.APRIL_TAG
                 );
             }
-            if(gamepad1.aWasPressed()){
-                follower.setPose( new Pose(Math.abs(12.7 - (getIsBlue() ? 0 : 144)),12.6,follower.getHeading()));
-            }
-            hardware.intake0.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Forward_Intake_Power
+            hardware.intake0.setPower(isShooting ? 1 : Tuning_Constant.testing_Forward_Intake_Power
                             * (gamepad1.dpad_down ? -1 : 1));
-            hardware.intake1.setPower(isShooting ? 0.6 : Tuning_Constant.testing_Rear_Intake_Power
+            hardware.intake1.setPower(isShooting ? 1 : Tuning_Constant.testing_Rear_Intake_Power
                             * (gamepad1.dpad_down ? -1 : 1));
             //hardware.turretController.setPosition(turretRegulate.regulate(0.5));
             hardware.blocker.setPosition(isShooting ? 0.22 : 0);
@@ -187,7 +184,7 @@ public class Control_Mode {
             telemetry.addData("Robot Y", follower.getPose().getY());
             telemetry.addData("Robot Heading", Math.toDegrees(follower.getPose().getHeading()));
             telemetry.addData("旋轉砲台朝向", hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset);
-            telemetry.addData("瞄準模式", turretController.getAimMode());
+//            telemetry.addData("瞄準模式", turretController.getAimMode());
             telemetry.addData("Tx原始誤差", turretController.getLastTxErrorDeg());
             telemetry.addData("射球誤差",Math.abs(shooterResult.flywheelRPM - hardware.shooter0.getVelocity() * 60/28));
             telemetry.addData("停止重新定位中", relocalizing);

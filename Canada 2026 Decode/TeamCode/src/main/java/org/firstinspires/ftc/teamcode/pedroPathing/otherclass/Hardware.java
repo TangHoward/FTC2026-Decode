@@ -15,7 +15,8 @@ public class Hardware {
     //直流馬達
     public DcMotorEx shooter0,shooter1, intake0,intake1;
 
-    public Servo angleController,blocker,turretController;
+    public Servo angleController,blocker;
+    public Servo turretController;
     public Limelight3A limelight;
     public Rev9AxisImu rev9AxisImu;
     public void init(HardwareMap hardwareMap) {

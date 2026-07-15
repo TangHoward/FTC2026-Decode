@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.Shooter.ServoAngleCalculation;
 import org.firstinspires.ftc.teamcode.pedroPathing._5TurnServo._5TurnServoRegulate;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
@@ -17,6 +18,7 @@ public class Intake_Shooter_PIDF_Tuning extends OpMode {
             855, 900.00,945, 990.00,1035, 1080.00,1125, 1170.00,1215, 1260.00,1305, 1350.00,1395, 1440.00,1485, 1530.00,1575, 1620.00,
             1665,1710.00,1755, 1800.00
     };
+    private ServoAngleCalculation servoAngleCalculation = new ServoAngleCalculation();
     private _5TurnServoRegulate turretRegulate = new _5TurnServoRegulate(tableX,tableY);
     @Override
     public void init() {
@@ -45,14 +47,14 @@ public class Intake_Shooter_PIDF_Tuning extends OpMode {
                 ,Tuning_Constant.Shooter_D_Far
                 ,Tuning_Constant.Shooter_F_Far);
 
-        //hardware.shooter0.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
-        //hardware.shooter1.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
+        hardware.shooter0.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
+        hardware.shooter1.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
 
-        hardware.intake0.setPower(gamepad1.b ? 0.6 : Tuning_Constant.testing_Forward_Intake_Power);
-        hardware.intake1.setPower(gamepad1.b ? 0.6 : Tuning_Constant.testing_Rear_Intake_Power);
+        hardware.intake0.setPower(gamepad1.b ? 1 : Tuning_Constant.testing_Forward_Intake_Power);
+        hardware.intake1.setPower(gamepad1.b ? 1 : Tuning_Constant.testing_Rear_Intake_Power);
 
-        hardware.angleController.setPosition(Tuning_Constant.angleServo);
-        hardware.turretController.setPosition(turretRegulate.regulate(0.5));
+        hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(Tuning_Constant.angleServo));
+//        hardware.turretController.setPower(turretRegulate.regulate(0.5));
         hardware.blocker.setPosition(gamepad1.b ? 0.22:0);
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
