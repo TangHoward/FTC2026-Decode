@@ -4,30 +4,30 @@ import com.bylazar.configurables.annotations.Configurable;
 
 @Configurable
 public class Tuning_Constant {
-    public static double Shooter_P_Far = 120, Shooter_I_Far = 0, Shooter_D_Far = 0, Shooter_F_Far = 11.4;
+    public static double Shooter_P_Far = 120, Shooter_I_Far = 0, Shooter_D_Far = 0, Shooter_F_Far = 11.5;
     public static double Shooter_P_Close = 100, Shooter_I_Close = 0, Shooter_D_Close = 0, Shooter_F_Close = 11.9;
 
     public static double testing_Shooter_Target_RPM = 2550,testing_Forward_Intake_Power =1, testing_Rear_Intake_Power = 0.4;
     public static double servo = 0,angleServo = 0.05;
     public static double lunch_EFFICIENCY = 0.42;
     public static double PREFERRED_ALPHA_DEG = 53; //40~72
-    public static double Turret_Tx_P = 0;
+    public static double Turret_Tx_P = 0.3;
     public static double Turret_IMU_P = 0.6;
     public static double Turret_IMU_I = 0.0;
     public static double Turret_IMU_D = 0.01;
     public static double Turret_IMU_I_MAX = 5.0;
-    public static double Turret_Tx_I = 1;
+    public static double Turret_Tx_I = 4;
     public static double Turret_Tx_D = 0.0005;
     public static double Turret_Tx_I_MAX = 10;
-    // 進入「精修 I」的誤差門檻(度),需小於 Turret_Tx_Deadband_Exit_Deg
-    public static double Turret_Tx_I_Fine_Deg = 4;
-
-    // 精修用的第二組 I 增益,通常比 Turret_Tx_I 大,讓誤差在小範圍時能更快收斂到 0
-    public static double Turret_Tx_I_Fine = 0.5;
-    public static double Turret_Tx_Deadband_Deg = 0.5;
-    public static double Turret_Tx_Deadband_Exit_Deg = Turret_Tx_Deadband_Deg * 1.75;
     public static double Turret_Tx_MAX_CORR = 15.0;
     public static double Turret_Tx_I_Freeze_Speed_InPerSec = 1.5;
+
+// ── Tx 精細模式:誤差小於門檻時切換成另一組(通常較弱/較穩)的 PID 增益 ──
+    /** 誤差小於這個值(度)時視為進入精細模式 */
+    public static double Turret_Tx_Fine_Threshold_Deg = 1;
+    public static double Turret_Tx_P_Fine = 0;
+    public static double Turret_Tx_I_Fine = 0;
+    public static double Turret_Tx_D_Fine = 0;
 
     // ── Limelight 視覺定位：動態品質過濾 ─────────────────────
     /** 平均 tag 距離超過這個值（inches）就直接拒絕本次視覺讀值 */

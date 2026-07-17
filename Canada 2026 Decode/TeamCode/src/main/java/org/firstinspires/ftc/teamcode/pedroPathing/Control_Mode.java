@@ -105,8 +105,8 @@ public class Control_Mode {
                 follower.setTeleOpDrive(0, 0, 0, false);
             } else {
                 follower.setTeleOpDrive(
-                        -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1)*0.8,
-                        -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1)*0.8,
+                        -gamepad1.left_stick_y * (getIsBlue() ? -1 : 1)*1,
+                        -gamepad1.left_stick_x * (getIsBlue() ? -1 : 1)*1,
                         -gamepad1.right_stick_x*0.6, false);
             }
 
@@ -127,7 +127,8 @@ public class Control_Mode {
             if (!gamepad1.b) {
                 isShooting = false;
             } else if (!isShooting) {
-                if (rpmError > -50 && rpmError < 100 && Math.abs(turretController.getLastTxErrorDeg()) < 1) {
+                if (rpmError > -50 && rpmError < 100 && ((turretController.getAimMode() == TurretController.AimMode.APRIL_TAG) ?
+                        (Math.abs(turretController.getLastTxErrorDeg()) < (isFar ? 2 :5)): true)) {
                     isShooting = true;
                 }
             }
@@ -171,7 +172,7 @@ public class Control_Mode {
                         ,Tuning_Constant.Shooter_D_Close
                         ,Tuning_Constant.Shooter_F_Close);
             }
-            turretController.update(relocalizing);
+            turretController.update(relocalizing, false);
 
             telemetry.addData("是否有錯誤",shooterResult.valid ?"沒有":"有");
             telemetry.addData("射球計算機錯誤訊息",shooterResult.errorMessage);
@@ -184,7 +185,6 @@ public class Control_Mode {
             telemetry.addData("Robot Y", follower.getPose().getY());
             telemetry.addData("Robot Heading", Math.toDegrees(follower.getPose().getHeading()));
             telemetry.addData("旋轉砲台朝向", hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset);
-//            telemetry.addData("瞄準模式", turretController.getAimMode());
             telemetry.addData("Tx原始誤差", turretController.getLastTxErrorDeg());
             telemetry.addData("射球誤差",Math.abs(shooterResult.flywheelRPM - hardware.shooter0.getVelocity() * 60/28));
             telemetry.addData("停止重新定位中", relocalizing);

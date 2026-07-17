@@ -144,8 +144,8 @@ public class Auto_Mode {
         }
         public Command autoRoutine(){
             return sequential(
-                    instant(() -> setShooterRPM(2550)),
-                    instant(() -> setServoAngle(42)),
+                    instant(() -> setShooterRPM(2500)),
+                    instant(() -> setServoAngle(45.84)),
                     follow(follower, goStraightScoringPose, true),
                     shooting(),
                     spit(follow(follower, intake2ndPath, true)),
@@ -153,12 +153,12 @@ public class Auto_Mode {
                     follow(follower, goScoringPoseFromPushGate, true),
                     shooting(),
                     spit(follow(follower, gotoGate, true)),
-                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(3000)),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1500)),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
                     spit(follow(follower, gotoGate, true)),
-                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(3000)),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1500)),
                     waitMs(2000),
                     follow(follower, goBackGate),
                     shooting(),
@@ -182,7 +182,7 @@ public class Auto_Mode {
             turretController = new TurretController(hardware, follower);
             turretController.setAimPoint(  getIsBlue() ? 4:140,140);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             hardware.shooter0.setVelocityPIDFCoefficients(
                     Tuning_Constant.Shooter_P_Close
                     ,Tuning_Constant.Shooter_I_Close
@@ -195,7 +195,7 @@ public class Auto_Mode {
                     ,Tuning_Constant.Shooter_F_Close);
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2550);
+            packet.put("targetRPM", 2500);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
 
@@ -216,7 +216,7 @@ public class Auto_Mode {
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2550);
+            packet.put("targetRPM", 2500);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
         public void setServoAngle(double angle){
@@ -309,7 +309,7 @@ public class Auto_Mode {
                     ,Math.toRadians(Math.abs(25.5 - (getIsBlue() ? 180 : 0)))
             );
             loadZonePose = new Pose(
-                    (getIsBlue()? 144 - 132.5:132.5),
+                    (getIsBlue()? 144 - 131.5:131.5),
                     10
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
@@ -636,8 +636,8 @@ public class Auto_Mode {
         }
         public Command autoRoutine(){
             return sequential(
-                    instant(() -> setShooterRPM(2550)),
-                    instant(() -> setServoAngle(42)),
+                    instant(() -> setShooterRPM(2500)),
+                    instant(() -> setServoAngle(45.84)),
                     follow(follower, goStraightScoringPose,true),
                     shooting(),
                     spit(follow(follower, intake2ndPath,true)),
@@ -645,7 +645,7 @@ public class Auto_Mode {
                     follow(follower, goScoringPoseFromPushGate,true),
                     shooting(),
                     spit(follow(follower, gotoGate, true)),
-                    follow(follower, gotoGateTwo, true , 0.6).raceWith(waitMs(3000)),
+                    follow(follower, gotoGateTwo, true , 0.6).raceWith(waitMs(1500)),
                     waitMs(2000),
                     follow(follower, goBackGate,true),
                     shooting(),
@@ -671,7 +671,7 @@ public class Auto_Mode {
             turretController = new TurretController(hardware, follower);
             turretController.setAimPoint(  getIsBlue() ? 4:140,140);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             hardware.shooter0.setVelocityPIDFCoefficients(
                     Tuning_Constant.Shooter_P_Close
                     ,Tuning_Constant.Shooter_I_Close
@@ -684,7 +684,7 @@ public class Auto_Mode {
                     ,Tuning_Constant.Shooter_F_Close);
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2550);
+            packet.put("targetRPM", 2500);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
 
@@ -706,7 +706,7 @@ public class Auto_Mode {
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
-            packet.put("targetRPM", 2550);
+            packet.put("targetRPM", 2500);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }
         public void setServoAngle(double angle){

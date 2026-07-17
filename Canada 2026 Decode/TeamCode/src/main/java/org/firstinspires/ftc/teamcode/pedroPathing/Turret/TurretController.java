@@ -76,6 +76,13 @@
          * 避免誤差剛好卡在邊界時因雜訊反覆進出、造成 I 忽凍結忽解凍。
          */
         private boolean txInDeadband = false;
+        // 拿掉這些:
+// private boolean txInDeadband = false;
+// (Turret_Tx_I_Fine, Turret_Tx_I_Fine_Deg, Turret_Tx_Deadband_Deg, Turret_Tx_Deadband_Exit_Deg 這些常數也不用了)
+
+        // 新增:一個用來做 D 低通濾波的狀態,以及記錄上次拿到的原始 tx 值(判斷是否為新幀)
+        private double txFilteredErrorDeg = 0.0;
+        private double txLastRawTxDeg = Double.NaN;
 
         public TurretController(Hardware hardware, Follower follower) {
             this.hardware = hardware;
@@ -135,7 +142,7 @@
                 txIntegralDeg   = 0.0;
                 txLastErrorDeg  = 0.0;
                 txLastTimeNs    = 0L;
-                txInDeadband    = false;
+//                txInDeadband    = false;
             }
             aimPointX = fieldX;
             aimPointY = fieldY;
@@ -212,7 +219,7 @@
 
         /** 一般用法：正常瞄準，不凍結砲台。 */
         public void update() {
-            update(false);
+            update(false, false);
         }
 
         /**
@@ -226,7 +233,7 @@
          *                     造成微分項暴衝——這跟 setAimMode() 切換時的處理
          *                     邏輯一致。
          */
-        public void update(boolean freezeAim) {
+        public void update(boolean freezeAim, boolean shooting) {
             double robotX = follower.getPose().getX();
             double robotY = follower.getPose().getY();
             double robotHeadingRad = follower.getPose().getHeading();
@@ -294,71 +301,64 @@
                     double txError = tx.txDeg - txTargetDeg;
                     lastTxErrorDeg = txError;
 
-                    // 遲滯判斷：目前在死區內，要「明顯超出」離開門檻才算離開；
-                    // 目前在死區外，要「低於」進入門檻才算進入。避免誤差卡在
-                    // 邊界附近時因雜訊反覆進出，造成 I 忽凍結忽解凍。
-                    if (txInDeadband) {
-                        if (Math.abs(txError) > Tuning_Constant.Turret_Tx_Deadband_Exit_Deg) {
-                            txInDeadband = false;
-                        }
-                    } else {
-                        if (Math.abs(txError) < Tuning_Constant.Turret_Tx_Deadband_Deg) {
-                            txInDeadband = true;
-                        }
+                    long nowNs = System.nanoTime();
+                    double dt = (txLastTimeNs == 0L) ? 0.0 : (nowNs - txLastTimeNs) / 1e9;
+                    dt = clamp(dt, 0.0, MAX_DT_SEC);
+                    txLastTimeNs = nowNs;
+
+                    // ── D:只在真的拿到「新一幀」視覺讀值時才計算微分，
+                    //     並先對誤差做一階低通濾波，避免雜訊被微分放大 ──
+                    boolean isNewFrame = Double.isNaN(txLastRawTxDeg) || tx.txDeg != txLastRawTxDeg;
+                    txLastRawTxDeg = tx.txDeg;
+
+                    double derivativeDegPerSec = 0.0;
+                    if (isNewFrame && dt > 1e-6) {
+                        double alpha = 0.3; // 低通濾波係數，可調
+                        txFilteredErrorDeg = txFilteredErrorDeg + alpha * (txError - txFilteredErrorDeg);
+                        derivativeDegPerSec = (txFilteredErrorDeg - txLastErrorDeg) / dt;
+                        txLastErrorDeg = txFilteredErrorDeg;
+                    }
+                    // 不是新幀時，derivative 直接視為 0 貢獻（不是拿舊數字硬算），
+                    // 避免同一幀被重複當成「誤差沒變化」而錯誤地拉低微分項。
+
+                    // ── P：每輪都用當下 error 直接算，不做任何條件式跳過 ──
+                    // ── 依誤差大小選擇要用「一般」或「精細」PID 增益 ──
+                    boolean useFineGains = Math.abs(txError) < Tuning_Constant.Turret_Tx_Fine_Threshold_Deg;
+                    double kP = useFineGains ? Tuning_Constant.Turret_Tx_P_Fine : Tuning_Constant.Turret_Tx_P;
+                    double kI = useFineGains ? Tuning_Constant.Turret_Tx_I_Fine : Tuning_Constant.Turret_Tx_I;
+                    double kD = useFineGains ? Tuning_Constant.Turret_Tx_D_Fine : Tuning_Constant.Turret_Tx_D;
+
+                    // ── P：每輪都用當下 error 直接算，不做任何條件式跳過 ──
+                    double pOut = txError * kP;
+
+                    // ── I：先算出「假設不限幅」的 output，用來做 anti-windup 判斷 ──
+                    double iOutRaw = (txIntegralDeg + txError * dt) * kI;
+                    double dOut = derivativeDegPerSec * kD;
+                    double pidOutputDegRaw = pOut + iOutRaw + dOut;
+                    double pidOutputDeg = clamp(pidOutputDegRaw,
+                            -Tuning_Constant.Turret_Tx_MAX_CORR, Tuning_Constant.Turret_Tx_MAX_CORR);
+
+                    boolean saturated = (pidOutputDegRaw != pidOutputDeg);
+                    boolean errorPushesAwayFromSaturation =
+                            (pidOutputDeg > 0 && txError < 0) || (pidOutputDeg < 0 && txError > 0);
+
+                    // Anti-windup：只要沒有飽和，或飽和但誤差正把輸出往回拉，就允許 I 累積。
+                    // 拿掉「isTranslating 就整個凍結」這種二元條件——移動造成的暫態誤差
+                    // 應該透過調整 dt 上限 / Ki 大小來處理，而不是整段跳過積分。
+                    if (!saturated || errorPushesAwayFromSaturation) {
+                        txIntegralDeg += txError * dt;
+                        txIntegralDeg = clamp(txIntegralDeg,
+                                -Tuning_Constant.Turret_Tx_I_MAX, Tuning_Constant.Turret_Tx_I_MAX);
                     }
 
-                    if (txInDeadband) {
-                        txLastErrorDeg = txError;
-                        txLastTimeNs = 0L;
-                        currentAngleDeg = normalizeAngle(currentAngleDeg + lastTxCorrectionDeg);
-                        lastTxApplied = true;
-                    } else {
-                        long nowNs = System.nanoTime();
-                        double dt = (txLastTimeNs == 0L) ? 0.0 : (nowNs - txLastTimeNs) / 1e9;
-                        dt = clamp(dt, 0.0, MAX_DT_SEC);
-                        txLastTimeNs = nowNs;
+                    currentAngleDeg = normalizeAngle(currentAngleDeg - pidOutputDeg);
+                    lastTxCorrectionDeg = -pidOutputDeg;
+                    lastTxApplied = true;
 
-                        double derivativeDegPerSec = (dt > 1e-6) ? (txError - txLastErrorDeg) / dt : 0.0;
-                        txLastErrorDeg = txError;
-
-                        // 依誤差大小選用 I 增益:誤差落在 Turret_Tx_I_Fine_Deg 以內時,
-                        // 改用比較積極的 Turret_Tx_I_Fine 做精修收斂;否則用一般的 Turret_Tx_I。
-                        // 只切換「乘上去的係數」,不拆分積分累加值本身,避免切換瞬間積分項跳動造成暴衝。
-                        double kiToUse = (Math.abs(txError) < Tuning_Constant.Turret_Tx_I_Fine_Deg)
-                                ? Tuning_Constant.Turret_Tx_I_Fine
-                                : Tuning_Constant.Turret_Tx_I;
-
-                        // 先算出「未限幅」的 PID 輸出,用來判斷是否飽和(anti-windup 用)
-                        double pidOutputDegRaw =
-                                txError               * Tuning_Constant.Turret_Tx_P
-                                        + txIntegralDeg       * kiToUse
-                                        + derivativeDegPerSec * Tuning_Constant.Turret_Tx_D;
-                        double pidOutputDeg = clamp(pidOutputDegRaw,
-                                -Tuning_Constant.Turret_Tx_MAX_CORR, Tuning_Constant.Turret_Tx_MAX_CORR);
-
-                        boolean saturated = (pidOutputDegRaw != pidOutputDeg);
-                        boolean errorPushesAwayFromSaturation =
-                                (pidOutputDeg > 0 && txError < 0) || (pidOutputDeg < 0 && txError > 0);
-
-                        // Conditional integration + anti-windup：
-                        // 只有在「底盤沒有平移」且「輸出沒有被夾住，或誤差正把輸出往回拉」時
-                        // 才允許積分累加，避免移動中的暫態誤差 / 飽和後的無效累積把 I 灌爆。
-                        if (!isTranslating && (!saturated || errorPushesAwayFromSaturation)) {
-                            txIntegralDeg += txError * dt;
-                            txIntegralDeg = clamp(txIntegralDeg,
-                                    -Tuning_Constant.Turret_Tx_I_MAX, Tuning_Constant.Turret_Tx_I_MAX);
-                        }
-
-                        currentAngleDeg = normalizeAngle(currentAngleDeg - pidOutputDeg);
-                        lastTxCorrectionDeg = -pidOutputDeg;
-                        lastTxApplied = true;
-                    }
                 } else {
-                    // tag 短暫看不到時，只重置 dt 計時避免下次 dt 突然暴增造成微分項暴衝，
-                    // 但保留 txIntegralDeg，避免每次 tag 閃爍就把累積的修正歸零。
-                    // 注意：lastTxErrorDeg 不在此清除，維持上一次看到 tag 時的誤差值，
-                    // 方便 telemetry 顯示「最後一次量到的誤差」而不是突然跳成 0。
+                    // tag 短暫看不到：只重置 dt 計時，保留 txIntegralDeg 不清零
                     txLastTimeNs = 0L;
+                    txLastRawTxDeg = Double.NaN; // 下次看到 tag 時強制視為新幀，避免用到過期的 dt/derivative
                     lastTxCorrectionDeg = 0.0;
                     lastTxApplied = false;
                 }
@@ -401,7 +401,10 @@
             }
 
             double servoPosition = TurretCalibration.turretAngleToPosition(currentAngleDeg);
+
+            if(!shooting){
             hardware.turretController.setPosition(servoPosition);
+            }
         }
 
         public void setAngleDirect(double angleDeg) {
