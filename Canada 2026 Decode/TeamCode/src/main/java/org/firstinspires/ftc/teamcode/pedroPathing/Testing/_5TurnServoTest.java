@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing._5TurnServo._5TurnServoRegula
 
 import java.util.Locale;
 
-@TeleOp(group = "5TurnServo", name = "_5TurnServoTest")
+//@TeleOp(group = "5TurnServo", name = "_5TurnServoTest")
 public class _5TurnServoTest  extends LinearOpMode {
     private Servo s0;
     private DcMotor m0;

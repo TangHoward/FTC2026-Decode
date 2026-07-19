@@ -233,7 +233,7 @@
          *                     造成微分項暴衝——這跟 setAimMode() 切換時的處理
          *                     邏輯一致。
          */
-        public void update(boolean freezeAim, boolean shooting) {
+        public void update(boolean freezeAim, boolean farZone) {
             double robotX = follower.getPose().getX();
             double robotY = follower.getPose().getY();
             double robotHeadingRad = follower.getPose().getHeading();
@@ -325,7 +325,7 @@
                     // ── 依誤差大小選擇要用「一般」或「精細」PID 增益 ──
                     boolean useFineGains = Math.abs(txError) < Tuning_Constant.Turret_Tx_Fine_Threshold_Deg;
                     double kP = useFineGains ? Tuning_Constant.Turret_Tx_P_Fine : Tuning_Constant.Turret_Tx_P;
-                    double kI = useFineGains ? Tuning_Constant.Turret_Tx_I_Fine : Tuning_Constant.Turret_Tx_I;
+                    double kI = useFineGains ? Tuning_Constant.Turret_Tx_I_Fine : farZone ? Tuning_Constant.Turret_Tx_I_farZone : Tuning_Constant.Turret_Tx_I;
                     double kD = useFineGains ? Tuning_Constant.Turret_Tx_D_Fine : Tuning_Constant.Turret_Tx_D;
 
                     // ── P：每輪都用當下 error 直接算，不做任何條件式跳過 ──
@@ -402,9 +402,7 @@
 
             double servoPosition = TurretCalibration.turretAngleToPosition(currentAngleDeg);
 
-            if(!shooting){
             hardware.turretController.setPosition(servoPosition);
-            }
         }
 
         public void setAngleDirect(double angleDeg) {

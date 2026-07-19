@@ -69,6 +69,7 @@ public class Control_Mode {
             turretController.setAimPoint(getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
 //            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
+
             isFar = getIsFar();
         }
 
@@ -128,7 +129,7 @@ public class Control_Mode {
                 isShooting = false;
             } else if (!isShooting) {
                 if (rpmError > -50 && rpmError < 100 && ((turretController.getAimMode() == TurretController.AimMode.APRIL_TAG) ?
-                        (Math.abs(turretController.getLastTxErrorDeg()) < (isFar ? 2 :5)): true)) {
+                        (Math.abs(turretController.getLastTxErrorDeg()) < (isFar ? 2 :3)): true)) {
                     isShooting = true;
                 }
             }
@@ -143,9 +144,9 @@ public class Control_Mode {
                 );
             }
             hardware.intake0.setPower(isShooting ? 1 : Tuning_Constant.testing_Forward_Intake_Power
-                            * (gamepad1.dpad_down ? -1 : 1));
+                            * (gamepad1.dpad_down ? -1 : 1) * (isFar ? 0.8 : 1));
             hardware.intake1.setPower(isShooting ? 1 : Tuning_Constant.testing_Rear_Intake_Power
-                            * (gamepad1.dpad_down ? -1 : 1));
+                            * (gamepad1.dpad_down ? -1 : 1) * (isFar ? 0.8 : 1));
             //hardware.turretController.setPosition(turretRegulate.regulate(0.5));
             hardware.blocker.setPosition(isShooting ? 0.22 : 0);
 
@@ -172,7 +173,7 @@ public class Control_Mode {
                         ,Tuning_Constant.Shooter_D_Close
                         ,Tuning_Constant.Shooter_F_Close);
             }
-            turretController.update(relocalizing, false);
+            turretController.update(relocalizing, isFar);
 
             telemetry.addData("是否有錯誤",shooterResult.valid ?"沒有":"有");
             telemetry.addData("射球計算機錯誤訊息",shooterResult.errorMessage);
@@ -196,6 +197,7 @@ public class Control_Mode {
             telemetry.update();
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);
+            packet.put("shooter1RPM", hardware.shooter1.getVelocity() * 60/28);
             packet.put("targetRPM", shooterResult.flywheelRPM);
             Shooter_PIDF_Tuning.dashboard.sendTelemetryPacket(packet);
         }

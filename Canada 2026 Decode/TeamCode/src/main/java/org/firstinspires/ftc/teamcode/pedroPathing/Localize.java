@@ -72,7 +72,7 @@ public class Localize{
             Drawing.drawDebug(follower);
         }
     }
-    @TeleOp
+//    @TeleOp
     public static class PoseTest extends LocalizeTest{
         @Override
         protected Pose getPose() {

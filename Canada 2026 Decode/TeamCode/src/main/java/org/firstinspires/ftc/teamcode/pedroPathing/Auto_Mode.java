@@ -153,13 +153,13 @@ public class Auto_Mode {
                     follow(follower, goScoringPoseFromPushGate, true),
                     shooting(),
                     spit(follow(follower, gotoGate, true)),
-                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1500)),
-                    waitMs(2000),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1000)),
+                    waitMs(1500),
                     follow(follower, goBackGate),
                     shooting(),
                     spit(follow(follower, gotoGate, true)),
-                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1500)),
-                    waitMs(2000),
+                    follow(follower, gotoGateTwo, true, 0.6).raceWith(waitMs(1000)),
+                    waitMs(1500),
                     follow(follower, goBackGate),
                     shooting(),
                     spit(follow(follower, intake1stPath, true)),
@@ -260,7 +260,7 @@ public class Auto_Mode {
                     sequential(
                             instant(() -> hardware.intake0.setPower(-1)),
                             instant(() -> hardware.intake1.setPower(-1)),
-                            waitMs(300),
+                            waitMs(100),
                             instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
                             instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
                     ), followPath);
@@ -501,7 +501,7 @@ public class Auto_Mode {
                     sequential(
                             instant(() -> hardware.intake0.setPower(-1)),
                             instant(() -> hardware.intake1.setPower(-1)),
-                            waitMs(300),
+                            waitMs(100),
                             instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
                             instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
                     ), followPath);
@@ -550,7 +550,7 @@ public class Auto_Mode {
             );
             intake3rdControl = new Pose(
                     (getIsBlue()? 144 -97 :97) ,
-                    33
+                    37
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             pushGateControl = new Pose(
@@ -750,7 +750,7 @@ public class Auto_Mode {
                     sequential(
                             instant(() -> hardware.intake0.setPower(-1)),
                             instant(() -> hardware.intake1.setPower(-1)),
-                            waitMs(300),
+                            waitMs(100),
                             instant(() -> hardware.intake0.setPower(Tuning_Constant.testing_Forward_Intake_Power)),
                             instant(() -> hardware.intake1.setPower(Tuning_Constant.testing_Rear_Intake_Power))
                     ), followPath);

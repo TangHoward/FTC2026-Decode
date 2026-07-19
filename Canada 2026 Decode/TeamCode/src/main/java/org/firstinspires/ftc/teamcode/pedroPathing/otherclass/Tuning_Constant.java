@@ -16,7 +16,8 @@ public class Tuning_Constant {
     public static double Turret_IMU_I = 0.0;
     public static double Turret_IMU_D = 0.01;
     public static double Turret_IMU_I_MAX = 5.0;
-    public static double Turret_Tx_I = 4;
+    public static double Turret_Tx_I = 3.5;
+    public static double Turret_Tx_I_farZone = 2;
     public static double Turret_Tx_D = 0.0005;
     public static double Turret_Tx_I_MAX = 10;
     public static double Turret_Tx_MAX_CORR = 15.0;

@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 
-@TeleOp(name = "ShooterPIDFTuning", group = "TEST")
+//@TeleOp(name = "ShooterPIDFTuning", group = "TEST")
 public class Shooter_PIDF_Tuning extends OpMode {
     private Hardware hardware = new Hardware();
     public static FtcDashboard dashboard = FtcDashboard.getInstance();

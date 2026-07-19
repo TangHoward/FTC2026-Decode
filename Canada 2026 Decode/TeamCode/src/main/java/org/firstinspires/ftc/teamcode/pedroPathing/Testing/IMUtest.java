@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-@TeleOp(name = "IMU Test")
+//@TeleOp(name = "IMU Test")
 public class IMUtest extends LinearOpMode {
 
     public Rev9AxisImu imu;
