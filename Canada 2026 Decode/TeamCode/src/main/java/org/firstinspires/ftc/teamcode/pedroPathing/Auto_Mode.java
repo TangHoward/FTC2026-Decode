@@ -30,7 +30,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Configurable_Const
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 
-public class Auto_Mode {
+public class
+Auto_Mode {
 
     public static Pose robotPose = null;
     public static Double turretAngle = null;
@@ -180,9 +181,10 @@ public class Auto_Mode {
             buildPath();
             follower.update();
             turretController = new TurretController(hardware, follower);
-            turretController.setAimPoint(  getIsBlue() ? 4:140,140);
+            turretController.setAimPoint(  getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
+            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+//            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             hardware.shooter0.setVelocityPIDFCoefficients(
                     Tuning_Constant.Shooter_P_Close
                     ,Tuning_Constant.Shooter_I_Close
@@ -407,11 +409,11 @@ public class Auto_Mode {
             buildPath();
             follower.update();
             turretController = new TurretController(hardware, follower);
-            turretController.setAimPoint(getIsBlue() ? 4:140,140);
+            turretController.setAimPoint(getIsBlue() ? 0:144,144);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            //turretController.setAimMode(TurretController.AimMode.IMU_PID);
-            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
-            turretController.setTxTarget(-2.5 * (getIsBlue() ? -1 : 1));
+            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+//            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
+            turretController.setTxTarget(-1.5 * (getIsBlue() ? -1 : 1));
             hardware.shooter0.setVelocityPIDFCoefficients(
                     Tuning_Constant.Shooter_P_Far
                     ,Tuning_Constant.Shooter_I_Far
@@ -438,8 +440,10 @@ public class Auto_Mode {
 
         @Override
         public void loop() {
+            turretController.setTxTarget(-1.5 * (getIsBlue() ? -1 : 1));
             follower.update();
-            turretController.update();
+//            hardware.turretController.setPosition(0.6);
+            turretController.update(false, true);
             Scheduler.execute();
             robotPose = follower.getPose();
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;
@@ -550,7 +554,7 @@ public class Auto_Mode {
             );
             intake3rdControl = new Pose(
                     (getIsBlue()? 144 -97 :97) ,
-                    37
+                    39
                     ,Math.toRadians(Math.abs(0 - (getIsBlue() ? 180 : 0)))
             );
             pushGateControl = new Pose(
@@ -669,9 +673,10 @@ public class Auto_Mode {
             buildPath();
             follower.update();
             turretController = new TurretController(hardware, follower);
-            turretController.setAimPoint(  getIsBlue() ? 4:140,140);
+            turretController.setAimPoint(getIsBlue() ? 2:142,142);
             turretController.setTarget(getIsBlue() ? TurretController.Target.ID_20 : TurretController.Target.ID_24);
-            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
+            turretController.setAimMode(TurretController.AimMode.IMU_PID);
+//            turretController.setAimMode(TurretController.AimMode.APRIL_TAG);
             hardware.shooter0.setVelocityPIDFCoefficients(
                     Tuning_Constant.Shooter_P_Close
                     ,Tuning_Constant.Shooter_I_Close
@@ -700,7 +705,7 @@ public class Auto_Mode {
         public void loop() {
             follower.update();
             turretController.update();
-            turretController.setTxTarget((farZone(follower.getPose()) ? -15 : 0) * (getIsBlue() ? -1 : 1));
+            turretController.setTxTarget((farZone(follower.getPose()) ? -1.5 : 0) * (getIsBlue() ? -1 : 1));
             Scheduler.execute();
             robotPose = follower.getPose();
             turretAngle = hardware.rev9AxisImu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + Configurable_Constant.turretAngleOffset;

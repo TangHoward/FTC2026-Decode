@@ -50,11 +50,11 @@ public class Intake_Shooter_PIDF_Tuning extends OpMode {
         hardware.shooter0.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
         hardware.shooter1.setVelocity(Tuning_Constant.testing_Shooter_Target_RPM /60*28);
 
-        hardware.intake0.setPower(gamepad1.b ? 1 : Tuning_Constant.testing_Forward_Intake_Power);
-        hardware.intake1.setPower(gamepad1.b ? 1 : Tuning_Constant.testing_Rear_Intake_Power);
+        hardware.intake0.setPower(gamepad1.b ? Tuning_Constant.testing_Forward_Intake_Power : 1);
+        hardware.intake1.setPower(gamepad1.b ? Tuning_Constant.testing_Rear_Intake_Power :  0.4);
 
         hardware.angleController.setPosition(servoAngleCalculation.DegreeToPos(Tuning_Constant.angleServo));
-//        hardware.turretController.setPower(turretRegulate.regulate(0.5));
+        hardware.turretController.setPosition(turretRegulate.regulate(0.5));
         hardware.blocker.setPosition(gamepad1.b ? 0.22:0);
         TelemetryPacket packet = new TelemetryPacket();
         packet.put("shooterRPM", hardware.shooter0.getVelocity() * 60/28);

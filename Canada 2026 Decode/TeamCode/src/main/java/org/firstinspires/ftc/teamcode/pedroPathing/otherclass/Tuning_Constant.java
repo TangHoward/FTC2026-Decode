@@ -17,7 +17,7 @@ public class Tuning_Constant {
     public static double Turret_IMU_D = 0.01;
     public static double Turret_IMU_I_MAX = 5.0;
     public static double Turret_Tx_I = 3.5;
-    public static double Turret_Tx_I_farZone = 2;
+    public static double Turret_Tx_I_farZone = 3;
     public static double Turret_Tx_D = 0.0005;
     public static double Turret_Tx_I_MAX = 10;
     public static double Turret_Tx_MAX_CORR = 15.0;
@@ -26,9 +26,12 @@ public class Tuning_Constant {
 // ── Tx 精細模式:誤差小於門檻時切換成另一組(通常較弱/較穩)的 PID 增益 ──
     /** 誤差小於這個值(度)時視為進入精細模式 */
     public static double Turret_Tx_Fine_Threshold_Deg = 1;
+    public static double Turret_Tx_Fine_Threshold_Deg_far = 3;
     public static double Turret_Tx_P_Fine = 0;
     public static double Turret_Tx_I_Fine = 0;
     public static double Turret_Tx_D_Fine = 0;
+
+
 
     // ── Limelight 視覺定位：動態品質過濾 ─────────────────────
     /** 平均 tag 距離超過這個值（inches）就直接拒絕本次視覺讀值 */

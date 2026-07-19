@@ -323,7 +323,7 @@
 
                     // ── P：每輪都用當下 error 直接算，不做任何條件式跳過 ──
                     // ── 依誤差大小選擇要用「一般」或「精細」PID 增益 ──
-                    boolean useFineGains = Math.abs(txError) < Tuning_Constant.Turret_Tx_Fine_Threshold_Deg;
+                    boolean useFineGains = Math.abs(txError) < (farZone ? Tuning_Constant.Turret_Tx_Fine_Threshold_Deg_far : Tuning_Constant.Turret_Tx_Fine_Threshold_Deg);
                     double kP = useFineGains ? Tuning_Constant.Turret_Tx_P_Fine : Tuning_Constant.Turret_Tx_P;
                     double kI = useFineGains ? Tuning_Constant.Turret_Tx_I_Fine : farZone ? Tuning_Constant.Turret_Tx_I_farZone : Tuning_Constant.Turret_Tx_I;
                     double kD = useFineGains ? Tuning_Constant.Turret_Tx_D_Fine : Tuning_Constant.Turret_Tx_D;
