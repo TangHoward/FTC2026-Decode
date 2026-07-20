@@ -37,9 +37,9 @@ public class ShooterCalculator {
     };
 
     /** isFar = true 時的固定伺服角度 (degrees) */
-    public static final double FAR_ANGLE_DEG = 55.0;
+    public static final double FAR_ANGLE_DEG = 67;
     /** isFar = true 時的固定 RPM */
-    public static final double FAR_RPM = 3400;
+    public static final double FAR_RPM = 4800;
 
     // ------------------------------------------------------------------
     // 飛輪參數（保留給 rpmToLaunchSpeed，給 Turret 速度補償用）

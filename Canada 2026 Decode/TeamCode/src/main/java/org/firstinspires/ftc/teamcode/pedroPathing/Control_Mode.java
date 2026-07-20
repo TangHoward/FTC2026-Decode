@@ -144,9 +144,9 @@ public class Control_Mode {
                                 : TurretController.AimMode.APRIL_TAG
                 );
             }
-            hardware.intake0.setPower(isShooting ? 1 * (isFar ?  Tuning_Constant.testing_Forward_Intake_Power : 1): 0.4
+            hardware.intake0.setPower(isShooting ? 1 * (isFar ?  Tuning_Constant.testing_Forward_Intake_Power : 1): 1
                             * (gamepad1.dpad_down ? -1 : 1));
-            hardware.intake1.setPower(isShooting ? 1 * (isFar ?  Tuning_Constant.testing_Rear_Intake_Power : 1): 1
+            hardware.intake1.setPower(isShooting ? 1 * (isFar ?  Tuning_Constant.testing_Rear_Intake_Power : 1): 0.4
                             * (gamepad1.dpad_down ? -1 : 1));
             //hardware.turretController.setPosition(turretRegulate.regulate(0.5));
             hardware.blocker.setPosition(isShooting ? 0.22 : 0);

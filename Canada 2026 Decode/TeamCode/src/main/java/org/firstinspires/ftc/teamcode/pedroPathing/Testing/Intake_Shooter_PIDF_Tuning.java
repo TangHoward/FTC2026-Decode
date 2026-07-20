@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing._5TurnServo._5TurnServoRegula
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Hardware;
 import org.firstinspires.ftc.teamcode.pedroPathing.otherclass.Tuning_Constant;
 
-//@TeleOp(name = "Intake_Shooter_PIDF_Tuning",group = "TEST")
+@TeleOp(name = "Intake_Shooter_PIDF_Tuning",group = "TEST")
 public class Intake_Shooter_PIDF_Tuning extends OpMode {
     private Hardware hardware = new Hardware();
     private double[] tableX = {0.00, 60.93, 109.13, 151.98, 195.50, 241.03, 288.56, 331.41, 373.59, 417.78, 465.98, 506.16, 549.01, 593.19, 642.07, 686.93, 731.11, 777.98, 814.13, 858.99, 901.84, 946.03, 988.21, 1031.06, 1080.60, 1124.12, 1173.00, 1219.86, 1262.04, 1311.59, 1357.78, 1396.62, 1450.18, 1494.36, 1534.54, 1583.41, 1624.25, 1669.11, 1719.32, 1766.19, 1809.71};
